@@ -96,10 +96,11 @@ def get_ethermine_info(cur_trex_profile, wallet_id):
     if response_dash['state'] is True and response_pay['state'] is True:
         dashboard = loads(response_dash['response'])
         payouts = loads(response_pay['response'])
+        crypto = XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
         if 'unconfirmed' in dashboard['data']['currentStatistics']:
-            ethermine_info['immature_balance'] = str(round(dashboard['data']['currentStatistics']['unconfirmed'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
-        ethermine_info['unpaid_balance'] = str(round(dashboard['data']['currentStatistics']['unpaid'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
-        ethermine_info['estimated_earning'] = str(round(payouts['data']['estimates']['coinsPerMin'] * 1440, 5)) + " " + XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
+            ethermine_info['immature_balance'] = str(round(dashboard['data']['currentStatistics']['unconfirmed'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
+        ethermine_info['unpaid_balance'] = str(round(dashboard['data']['currentStatistics']['unpaid'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
+        ethermine_info['estimated_earning'] = str(round(payouts['data']['estimates']['coinsPerMin'] * 1440, 5)) + " " + crypto
         ethermine_info['current_hashrate'] = str(round(dashboard['data']['currentStatistics']['currentHashrate'] / 1000000, 1))
         ethermine_info['average_hashrate'] = calculate_avg_hasrate(dashboard['data']['currentStatistics']['time'], dashboard['data']['statistics'], 'time', 'currentHashrate')
         ethermine_info['active_worker'] = str(dashboard['data']['currentStatistics']['activeWorkers'])
@@ -112,10 +113,9 @@ def get_ethermine_info(cur_trex_profile, wallet_id):
 def get_2miners_info(cur_trex_profile, wallet_id):
     two_miners_info = {}
     response_dash = make_request(XmlReader.settings['trex_profiles'][cur_trex_profile]['api_domain'] + "/" + wallet_id)
-    response_home = make_request(XmlReader.settings['trex_profiles'][cur_trex_profile]['domain'])
-    if response_dash['state'] is True and response_home['state'] is True:
+    if response_dash['state'] is True:
         dashboard = loads(response_dash['response'])
-        crypto = loads(response_home['response'])[0]['symbol']
+        crypto = XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
         if 'immature' in dashboard['stats']:
             two_miners_info['immature_balance'] = str(round(dashboard['stats']['immature'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
         two_miners_info['unpaid_balance'] = str(round(dashboard['stats']['balance'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto

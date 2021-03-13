@@ -35,7 +35,6 @@ class XmlReader:
                 'intensity': xml.getElementsByTagName('trex_profiles')[0].getElementsByTagName('profile')[ind].getElementsByTagName('intensity')[0].firstChild.data,
                 'pool_url': xml.getElementsByTagName('trex_profiles')[0].getElementsByTagName('profile')[ind].getElementsByTagName('pool_url')[0].firstChild.data,
                 'wallet': xml.getElementsByTagName('trex_profiles')[0].getElementsByTagName('profile')[ind].getElementsByTagName('wallet')[0].firstChild.data,
-                'domain': xml.getElementsByTagName('trex_profiles')[0].getElementsByTagName('profile')[ind].getElementsByTagName('domain')[0].firstChild.data,
                 'api_domain': xml.getElementsByTagName('trex_profiles')[0].getElementsByTagName('profile')[ind].getElementsByTagName('api_domain')[0].firstChild.data,
                 'divisor': int(xml.getElementsByTagName('trex_profiles')[0].getElementsByTagName('profile')[ind].getElementsByTagName('divisor')[0].firstChild.data)
             }
