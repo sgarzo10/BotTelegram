@@ -1,0 +1,15 @@
+------------- CREATE --------------
+netsh wlan set hostednetwork mode=allow ssid=Infostrada-EB3118 key=G7LLFX7R7G
+netsh wlan start hostednetwork
+rinomina interfaccia network (es. TestWIFI)
+condividi network da interfaccia internet a TestWIFI
+netsh wlan stop hostednetwork
+------------- START --------------
+netsh wlan start hostednetwork
+-------------- STOP --------------
+netsh wlan stop hostednetwork
+netsh wlan set hostednetwork mode=disallow
+------------- INQUIRY -------------
+netsh wlan show drivers
+netsh wlan show hostednetwork
+netsh wlan show hostednetwork setting=security

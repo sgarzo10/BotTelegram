@@ -1,0 +1,15 @@
+set_gpu_speed_fan - Setta la velocità della ventola della GPU
+start_miner - Avvia il miner
+stop_miner - Arresta il miner
+get_mining_status - Restituisce lo stato del miner
+get_trex_profiles - Restituisce la lista dei profili t-rex
+set_trex_profile - Imposta il profilo per t-rex
+start_server_vpn - Avvia il server VPN
+stop_server_vpn - Arreta il server VPN
+get_status_server_vpn - Restituisce lo stato del server VPN
+get_public_ip - Restituisce IP pubblico del server
+get_file_ovpn - Restituisce il file per il client Open VPN
+start_access_point - Avvia l'access point
+stop_access_point - Arresta l'access point
+get_access_point_status - Restituisce lo stato dell'access point
+shutdown_system - Arresta il sistema

@@ -1,0 +1,40 @@
+EasyRsa.bat
+./easyrsa init-pki
+./easyrsa build-ca
+./easyrsa gen-dh
+./easyrsa gen-req server nopass
+./easyrsa sign-req server server
+./easyrsa gen-req client
+./easyrsa sign-req client client
+openvpn --genkey secret ta.key
+FILE server.ovpn
+ca "C:\\OpenVPN\\config\\ca.crt"
+cert "C:\\OpenVPN\\config\\server.crt"
+key "C:\\OpenVPN\\config\\server.key"
+dh "C:\\OpenVPN\\config\\dh.pem"
+FILE client.ovpn
+sulla riga remote my-server-1 1194 sostituisci a my-server-1 indirizzo IP pubblico del server o DNS
+ca ca.crt
+cert client.crt
+key client.key
+FILE DA PORTARE SUL CLIENT
+ca.crt
+ta.key
+client.crt
+client.key
+client.ovpn
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\IPEnableRouter
+
+New-NetNat -Name "VpnMasq" -InternalIPInterfaceAddressPrefix "10.8.0.0/24"
+
+regola sul firewall per la porta in ingresso e uscita
+
+port mapping sul router verso l'indirizzo IP del server
+
+riavvia la macchina server
+
+# Remove-NetNat -Name "VpnMasq"
+# Get-NetNat -Name "VpnMasq"
+# route ADD 10.8.0.0 MASK 255.255.255.0 192.168.1.44
+# route delete 10.8.0.0 MASK 255.255.255.0 192.168.1.44

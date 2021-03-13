@@ -1,0 +1,61 @@
+{
+	"ab-indexing" : false,
+	"algo" : "ALGORITMO",
+	"api-bind-http" : "0.0.0.0:4067",
+	"api-bind-telnet" : "0.0.0.0:4068",
+	"api-read-only" : false,
+	"autoupdate" : false,
+	"back-to-main-pool-sec" : 600,
+	"coin" : "",
+	"cpu-priority" : 2,
+	"dag-build-mode" : "0",
+	"devices" : "0",
+	"exit-on-connection-lost" : false,
+	"exit-on-cuda-error" : true,
+	"extra-dag-epoch" : -1,
+	"gpu-init-mode" : 0,
+	"gpu-report-interval" : 0,
+	"gpu-report-interval-s" : 0,
+	"hashrate-avr" : 60,
+	"hide-date" : true,
+	"intensity" : "INTENSITA",
+	"keep-gpu-busy" : false,
+	"kernel" : "0",
+	"log-path" : "",
+	"low-load" : "0",
+	"monitoring-page" : 
+	{
+		"graph_interval_sec" : 3600,
+		"update_timeout_sec" : 10
+	},
+	"no-color" : true,
+	"no-hashrate-report" : false,
+	"no-nvml" : false,
+	"no-strict-ssl" : false,
+	"no-watchdog" : false,
+	"pci-indexing" : false,
+	"pools" : 
+	[
+		{
+			"pass" : "x",
+			"url" : "POOL_URL",
+			"user" : "WALLET_ID",
+			"worker" : "sga-server"
+		}
+	],
+	"protocol-dump" : false,
+	"reconnect-on-fail-shares" : 10,
+	"retries" : 3,
+	"retry-pause" : 10,
+	"script-crash" : "",
+	"script-epoch-change" : "",
+	"script-low-hash" : "",
+	"script-start" : "",
+	"sharerate-avr" : 600,
+	"temperature-color" : "65,75",
+	"temperature-limit" : 0,
+	"temperature-start" : 0,
+	"time-limit" : 0,
+	"timeout" : 300,
+	"worker" : "sga-server"
+}

@@ -1,0 +1,74 @@
+<settings>
+	<telegram_token>1684649610:AAGbO-FqfG3TLFPrem7xbx2S7j2c3C_o2jE</telegram_token>
+	<phone_number>+393468790160</phone_number>
+	<bot_username>sgarzo_bot</bot_username>
+	<ap_ip>192.168.159.1</ap_ip>
+	<ap_interface_name>TestWIFI</ap_interface_name>
+	<dhcp_path>C:\Users\Administrator\Desktop\BotTelegram\dhcp\wwwroot</dhcp_path>
+	<!-- Se email viene lasciata vuota non viene effettuata l'integrazione con meross -->
+	<meross_credential>
+		<email>simone.sganzerla.93@hotmail.it</email>
+		<password>cronaldo7</password>
+		<device_name>Rig Sgarzo</device_name>
+	</meross_credential>
+	<telegram_app>
+		<api_id>2985290</api_id>
+		<api_hash>3010c6b59a3cc4610927655a79223cc2</api_hash>
+	</telegram_app>
+	<msi_afterburner_config>VEN_10DE&amp;DEV_21C4&amp;SUBSYS_552719DA&amp;REV_A1&amp;BUS_2&amp;DEV_0&amp;FN_0.cfg</msi_afterburner_config>
+	<msi_afterburner_path>C:\Program Files (x86)\MSI Afterburner\</msi_afterburner_path>
+	<min_gpu_fan_speed>32</min_gpu_fan_speed>
+	<trex_ip>192.168.1.44</trex_ip>
+	<trex_profiles>
+		<profile>
+			<name>ethereum-eu</name>
+			<crypto>ETH</crypto>
+			<algo>ethash</algo>
+			<intensity>22</intensity>
+			<pool_url>stratum+tcp://eu1.ethermine.org:4444</pool_url>
+			<wallet>0x34bF608C827478b1EAb9a7c3EbA3ac46D0AF3788</wallet>
+			<domain>https://ethermine.org</domain>
+			<api_domain>https://api.ethermine.org</api_domain>
+			<divisor>1000000000000000000</divisor>
+		</profile>
+		<profile>
+			<name>ethereum-us</name>
+			<crypto>ETH</crypto>
+			<algo>ethash</algo>
+			<intensity>22</intensity>
+			<pool_url>stratum+tcp://us1.ethermine.org:4444</pool_url>
+			<wallet>0x34bF608C827478b1EAb9a7c3EbA3ac46D0AF3788</wallet>
+			<domain>https://ethermine.org</domain>
+			<api_domain>https://api.ethermine.org</api_domain>
+			<divisor>1000000000000000000</divisor>
+		</profile>
+		<profile>
+			<name>ravencoin</name>
+			<crypto>RVN</crypto>
+			<algo>kawpow</algo>
+			<intensity>22</intensity>
+			<pool_url>stratum+tcp://stratum-ravencoin.flypool.org:3333</pool_url>
+			<wallet>RCLbHtJq1Zf8d1pC5VNtWy627JwZPQpsJU</wallet>
+			<domain>https://ravencoin.flypool.org</domain>
+			<api_domain>https://api-ravencoin.flypool.org</api_domain>
+			<divisor>100000000</divisor>
+		</profile>
+		<profile>
+			<name>ravencoin-2m</name>
+			<crypto>RVN</crypto>
+			<algo>kawpow</algo>
+			<intensity>22</intensity>
+			<pool_url>stratum+tcp://rvn.2miners.com:6060</pool_url>
+			<wallet>RCLbHtJq1Zf8d1pC5VNtWy627JwZPQpsJU</wallet>
+			<domain>https://currencies.2miners.com/api/v1/ticker/ravencoin</domain>
+			<api_domain>https://rvn.2miners.com/api/accounts</api_domain>
+			<divisor>100000000</divisor>
+		</profile>
+	</trex_profiles>
+	<!-- Se valore s la funzione è attiva -->
+	<function>
+		<vpn>s</vpn>
+		<ap>s</ap>
+		<mining>s</mining>
+	</function>
+</settings>
