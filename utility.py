@@ -2,6 +2,7 @@ from subprocess import PIPE, Popen
 from os import system
 from urllib.request import urlopen, Request
 from logging import info, exception
+from json import load
 
 
 def make_cmd(cmd, sys=False):
@@ -58,3 +59,7 @@ def markdown_text(ret_str):
     for c in char_list:
         ret_str = ret_str.replace(c, '\\' + c)
     return ret_str
+
+
+class Config:
+    settings = load(open("settings.json"))

@@ -1,4 +1,9 @@
 /.idea/*
+/trex/config.json
+/trex/trex.exe
+/dhcp/dhcpsrv.exe
+/dhcp/dhcpsrv.ini
+/ovpn/client.ovpn
 /__pycache__/*
 /dist/*
 /build/*

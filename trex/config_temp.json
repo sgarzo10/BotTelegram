@@ -8,8 +8,8 @@
 	"back-to-main-pool-sec" : 600,
 	"coin" : "",
 	"cpu-priority" : 2,
-	"dag-build-mode" : "0, 0, 0",
-	"devices" : "0, 1, 2",
+	"dag-build-mode" : "BUILD_MODE",
+	"devices" : "DEVICES_ID",
 	"exit-on-connection-lost" : false,
 	"exit-on-cuda-error" : true,
 	"extra-dag-epoch" : -1,
@@ -18,11 +18,11 @@
 	"gpu-report-interval-s" : 0,
 	"hashrate-avr" : 60,
 	"hide-date" : true,
-	"intensity" : "INTENSITA, INTENSITA, INTENSITA",
+	"intensity" : "INTENSITA",
 	"keep-gpu-busy" : false,
-	"kernel" : "0,0,0",
+	"kernel" : "KERNEL_LIST",
 	"log-path" : "",
-	"low-load" : "0,0,0",
+	"low-load" : "LOW_LOAD_LIST",
 	"monitoring-page" : 
 	{
 		"graph_interval_sec" : 3600,
@@ -40,7 +40,7 @@
 			"pass" : "x",
 			"url" : "POOL_URL",
 			"user" : "WALLET_ID",
-			"worker" : "nome del rig"
+			"worker" : "WORKER_NAME"
 		}
 	],
 	"protocol-dump" : false,
@@ -57,5 +57,5 @@
 	"temperature-start" : 0,
 	"time-limit" : 0,
 	"timeout" : 300,
-	"worker" : "nome del rig"
+	"worker" : "WORKER_NAME"
 }

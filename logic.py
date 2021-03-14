@@ -1,5 +1,4 @@
-from xml_reader import XmlReader
-from utility import make_cmd, make_request
+from utility import make_cmd, make_request, Config
 from json import loads
 from time import sleep
 from meross_iot.api import MerossHttpClient
@@ -61,7 +60,7 @@ def calculate_uptime(total_second):
 
 
 def get_trex_info():
-    response = make_request("http://" + XmlReader.settings['trex_ip'] + ":4067/summary")
+    response = make_request("http://" + Config.settings['trex']['ip'] + ":4067/summary")
     trex_info = {}
     if response['state'] is True:
         trex = loads(response['response'])
@@ -92,7 +91,7 @@ def get_trex_info():
 
 
 def get_miner_info(cur_trex_profile, wallet_id):
-    if XmlReader.settings['trex_profiles'][cur_trex_profile]['api_domain'].find("2miners") != -1:
+    if Config.settings['trex']['profiles'][cur_trex_profile]['api_domain'].find("2miners") != -1:
         to_ret = get_2miners_info(cur_trex_profile, wallet_id)
     else:
         to_ret = get_ethermine_info(cur_trex_profile, wallet_id)
@@ -112,16 +111,17 @@ def calculate_avg_hasrate(current_time, stats, time_key, hashrate_key):
 
 def get_ethermine_info(cur_trex_profile, wallet_id):
     ethermine_info = {}
-    response_dash = make_request(XmlReader.settings['trex_profiles'][cur_trex_profile]['api_domain'] + "/miner/" + wallet_id + "/dashboard")
-    response_pay = make_request(XmlReader.settings['trex_profiles'][cur_trex_profile]['api_domain'] + "/miner/" + wallet_id + "/dashboard/payouts")
+    trex_profile = Config.settings['trex']['profiles'][cur_trex_profile]
+    crypto = Config.settings['cryptos'][trex_profile['crypto']]
+    response_dash = make_request(trex_profile['api_domain'] + "/miner/" + wallet_id + "/dashboard")
+    response_pay = make_request(trex_profile['api_domain'] + "/miner/" + wallet_id + "/dashboard/payouts")
     if response_dash['state'] is True and response_pay['state'] is True:
         dashboard = loads(response_dash['response'])
         payouts = loads(response_pay['response'])
-        crypto = XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
         if 'unconfirmed' in dashboard['data']['currentStatistics']:
-            ethermine_info['immature_balance'] = str(round(dashboard['data']['currentStatistics']['unconfirmed'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
-        ethermine_info['unpaid_balance'] = str(round(dashboard['data']['currentStatistics']['unpaid'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
-        ethermine_info['estimated_earning'] = str(round(payouts['data']['estimates']['coinsPerMin'] * 1440, 5)) + " " + crypto
+            ethermine_info['immature_balance'] = str(round(dashboard['data']['currentStatistics']['unconfirmed'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
+        ethermine_info['unpaid_balance'] = str(round(dashboard['data']['currentStatistics']['unpaid'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
+        ethermine_info['estimated_earning'] = str(round(payouts['data']['estimates']['coinsPerMin'] * 1440, 5)) + " " + crypto['crypto']
         ethermine_info['current_hashrate'] = str(round(dashboard['data']['currentStatistics']['currentHashrate'] / 1000000, 1))
         ethermine_info['average_hashrate'] = calculate_avg_hasrate(dashboard['data']['currentStatistics']['time'], dashboard['data']['statistics'], 'time', 'currentHashrate')
         ethermine_info['active_worker'] = str(dashboard['data']['currentStatistics']['activeWorkers'])
@@ -133,14 +133,15 @@ def get_ethermine_info(cur_trex_profile, wallet_id):
 
 def get_2miners_info(cur_trex_profile, wallet_id):
     two_miners_info = {}
-    response_dash = make_request(XmlReader.settings['trex_profiles'][cur_trex_profile]['api_domain'] + "/" + wallet_id)
+    trex_profile = Config.settings['trex']['profiles'][cur_trex_profile]
+    crypto = Config.settings['cryptos'][trex_profile['crypto']]
+    response_dash = make_request(trex_profile['api_domain'] + "/" + wallet_id)
     if response_dash['state'] is True:
         dashboard = loads(response_dash['response'])
-        crypto = XmlReader.settings['trex_profiles'][cur_trex_profile]['crypto']
         if 'immature' in dashboard['stats']:
-            two_miners_info['immature_balance'] = str(round(dashboard['stats']['immature'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
-        two_miners_info['unpaid_balance'] = str(round(dashboard['stats']['balance'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor'], 5)) + " " + crypto
-        two_miners_info['estimated_earning'] = str(round((dashboard['sumrewards'][0]['reward'] / XmlReader.settings['trex_profiles'][cur_trex_profile]['divisor']) * 24, 5)) + " " + crypto
+            two_miners_info['immature_balance'] = str(round(dashboard['stats']['immature'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
+        two_miners_info['unpaid_balance'] = str(round(dashboard['stats']['balance'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
+        two_miners_info['estimated_earning'] = str(round((dashboard['sumrewards'][0]['reward'] / pow(10, crypto['divisor'])) * 24, 5)) + " " + crypto['crypto']
         two_miners_info['current_hashrate'] = str(round(dashboard['currentHashrate'] / 1000000, 1))
         two_miners_info['average_hashrate'] = calculate_avg_hasrate(dashboard['updatedAt'] // 1000, dashboard['minerCharts'], 'x', 'minerHash')
         two_miners_info['active_worker'] = str(dashboard['workersOnline'])
@@ -152,11 +153,11 @@ def get_meross_info():
         'state': False
     }
     try:
-        http_handler = MerossHttpClient(email=XmlReader.settings['meross_credential']['email'], password=XmlReader.settings['meross_credential']['password'])
+        http_handler = MerossHttpClient(email=Config.settings['meross']['email'], password=Config.settings['meross']['password'])
         devices = http_handler.list_devices()
         i = 0
         for dev in devices:
-            if dev['devName'] == XmlReader.settings['meross_credential']['device_name'] and dev['onlineStatus'] == 1:
+            if dev['devName'] == Config.settings['meross']['device_name'] and dev['onlineStatus'] == 1:
                 devices = http_handler.list_supported_devices()
                 device_info['power'] = str(round(devices[i].get_electricity()['electricity']['power'] / 1000, 2))
                 device_info['state'] = True
@@ -168,7 +169,7 @@ def get_meross_info():
 
 
 def be_stop_miner():
-    response = make_request("http://" + XmlReader.settings['trex_ip'] + ":4067/control?command=shutdown")
+    response = make_request("http://" + Config.settings['trex']['ip'] + ":4067/control?command=shutdown")
     if response['state'] is True:
         if loads(response['response'])['success'] == 1:
             ret_str = "SPENTO MINER"
@@ -181,7 +182,7 @@ def be_stop_miner():
 
 def find_trex_profile(pool_url, wallet_id):
     key = ""
-    for key, value in XmlReader.settings['trex_profiles'].items():
+    for key, value in Config.settings['trex']['profiles'].items():
         if value['pool_url'] == pool_url and value['wallet'] == wallet_id:
             break
     return key
@@ -192,10 +193,24 @@ def be_set_trex_profile(profile):
         f = open('trex/config_temp.json', 'r')
         data_file = f.read()
         f.close()
-        data_file = data_file.replace("ALGORITMO", XmlReader.settings['trex_profiles'][profile]['algo'])
-        data_file = data_file.replace("POOL_URL", XmlReader.settings['trex_profiles'][profile]['pool_url'])
-        data_file = data_file.replace("WALLET_ID", XmlReader.settings['trex_profiles'][profile]['wallet'])
-        data_file = data_file.replace("INTENSITA", XmlReader.settings['trex_profiles'][profile]['intensity'])
+        trex_profile = Config.settings['trex']['profiles'][profile]
+        zero_string = ""
+        dev_string = ""
+        for i in range(Config.settings['trex']['gpu_number']):
+            zero_string = zero_string + "0, "
+            dev_string = dev_string + str(i) + ", "
+        zero_string = zero_string[:-2]
+        dev_string = dev_string[:-2]
+        crypto = Config.settings['cryptos'][trex_profile['crypto']]
+        data_file = data_file.replace("BUILD_MODE", zero_string)
+        data_file = data_file.replace("DEVICES_ID", dev_string)
+        data_file = data_file.replace("KERNEL_LIST", zero_string)
+        data_file = data_file.replace("LOW_LOAD_LIST", zero_string)
+        data_file = data_file.replace("ALGORITMO", crypto['algo'])
+        data_file = data_file.replace("POOL_URL", trex_profile['pool_url'])
+        data_file = data_file.replace("WALLET_ID", trex_profile['wallet'])
+        data_file = data_file.replace("INTENSITA", str(trex_profile['intensity'])[1:-1])
+        data_file = data_file.replace("WORKER_NAME", Config.settings['trex']['worker_name'])
         f = open('trex/config.json', 'w')
         f.write(data_file)
         f.close()
@@ -208,7 +223,7 @@ def be_set_trex_profile(profile):
 
 def be_set_gpu_speed_fan(speed):
     try:
-        file_path = XmlReader.settings['msi_afterburner_path'] + 'Profiles\\' + XmlReader.settings['msi_afterburner_config']
+        file_path = Config.settings['afterburner']['path'] + 'Profiles\\' + Config.settings['afterburner']['gpus'][0]['config_file']
         f = open(file_path, 'r')
         data_file = f.read()
         f.close()
@@ -217,7 +232,7 @@ def be_set_gpu_speed_fan(speed):
         f = open(file_path, 'w')
         f.write(data_file)
         f.close()
-        make_cmd("start \"\" \"" + XmlReader.settings['msi_afterburner_path'] + "MSIAfterburner.exe\" -Profile1", sys=True)
+        make_cmd("start \"\" \"" + Config.settings['afterburner']['path'] + "MSIAfterburner.exe\" -Profile1", sys=True)
         sleep(5)
         response = make_cmd("taskkill /F /IM MSIAfterburner.exe /T")
         if response['cmd_err'] == "" and response["cmd_out"].find("terminato") > 0:
@@ -294,12 +309,12 @@ def be_stop_server_vpn():
 def be_start_access_point():
     response = make_cmd("netsh wlan start hostednetwork")
     if response['cmd_err'] == "":
-        response = make_cmd("netsh interface ip set address \"" + XmlReader.settings['ap_interface_name'] + "\" static " + XmlReader.settings['ap_ip'] + " 255.255.255.0")
+        response = make_cmd("netsh interface ip set address \"" + Config.settings['access_point']['interface_name'] + "\" static " + Config.settings['access_point']['ip'] + " 255.255.255.0")
         if response['cmd_err'] == "":
             f = open("dhcp/dhcpsrv_temp.ini", "r")
             data_file = f.read()
             f.close()
-            data_file = data_file.replace("SERVER_IP", XmlReader.settings['ap_ip'])
+            data_file = data_file.replace("SERVER_IP", Config.settings['access_point']['ip'])
             f = open('dhcp/dhcpsrv.ini', 'w')
             f.write(data_file)
             f.close()
@@ -330,7 +345,7 @@ def get_mac_and_ip(client_number, cmd_out_split):
     to_ret = {}
     clients = {}
     if client_number > 0:
-        response_arp = make_cmd("arp -an " + XmlReader.settings['ap_ip'])
+        response_arp = make_cmd("arp -an " + Config.settings['access_point']['ip'])
         if response_arp['cmd_err'] == "":
             response_arp_split = response_arp['cmd_out'].split("\n")
             for i in range(client_number):

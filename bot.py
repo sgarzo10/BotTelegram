@@ -1,7 +1,6 @@
 from telegram.ext import Updater, CommandHandler
-from xml_reader import XmlReader
 from logging import basicConfig, info, INFO, exception
-from utility import make_cmd, markdown_text
+from utility import make_cmd, markdown_text, Config
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info
 from pyrogram import Client
 from time import sleep
@@ -26,8 +25,8 @@ def get_file_ovpn(update, context):
 
 def union_nvidia_trex(nvidia, trex):
     gpu_list = []
-    for n in nvidia:
-        for t in trex:
+    for t in trex:
+        for n in nvidia:
             if n['uuid'] == t['uuid']:
                 gpu_list.append(n | t)
     return gpu_list
@@ -37,7 +36,7 @@ def get_mining_status(update, context):
     info("REQUEST: get_mining_status")
     try:
         ret_str = ""
-        if XmlReader.settings['meross_credential'] != {}:
+        if Config.settings['meross'] != {}:
             meross_info = get_meross_info()
             if meross_info['state'] is True:
                 ret_str = "*TOTAL POWER CONSUME:* " + meross_info['power'] + " W" + "\n"
@@ -144,13 +143,13 @@ def get_status_server_vpn(update, context):
 def get_trex_profiles(update, context):
     info("REQUEST: get_trex_profile")
     ret_str = ""
-    for key, value in XmlReader.settings['trex_profiles'].items():
+    for key, value in Config.settings['trex']['profiles'].items():
         name = "*NAME:* " + key
-        algo = "*ALGO:* " + value['algo']
+        crypto = "*CRYPTO:* " + value['crypto']
         intensity = "*INTENSITY:* " + value['intensity']
         pool_url = "*POOL URL:* " + value['pool_url']
         wallet_id = "*WALLET ID:* " + value['wallet']
-        ret_str = ret_str + name + " " + algo + " " + intensity + "\n" + pool_url + "\n" + wallet_id + "\n" + separator
+        ret_str = ret_str + name + " " + crypto + " " + intensity + "\n" + pool_url + "\n" + wallet_id + "\n" + separator
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
 
 
@@ -162,7 +161,7 @@ def start_miner(update, context):
 
 def set_trex_profile(update, context):
     info("REQUEST: set_trex_profile")
-    trex_profile_list = XmlReader.settings['trex_profiles'].keys()
+    trex_profile_list = Config.settings['trex']['profiles'].keys()
     if len(context.args) == 1:
         if context.args[0] in trex_profile_list:
             ret_str = be_set_trex_profile(context.args[0])
@@ -204,16 +203,17 @@ def get_access_point_status(update, context):
 
 def set_gpu_speed_fan(update, context):
     info("REQUEST: set_gpu_speed_fan")
+    min_fan_speed = Config.settings['afterburner']['gpus'][0]['min_fan_speed']
     if len(context.args) == 1:
         try:
-            if XmlReader.settings['min_gpu_fan_speed'] <= int(context.args[0]) <= 100:
+            if min_fan_speed <= int(context.args[0]) <= 100:
                 ret_str = be_set_gpu_speed_fan(context.args[0])
             else:
-                ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(XmlReader.settings['min_gpu_fan_speed']) + " E 100"
+                ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(min_fan_speed) + " E 100"
         except ValueError as e:
             ret_str = "LA VELOCITA DEVE ESSERE UN NUMERO INTERO"
     else:
-        ret_str = "È NECESSARIO PASSARE LA VELOCITA COME PARAMETRO\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO\nLA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(XmlReader.settings['min_gpu_fan_speed']) + " E 100"
+        ret_str = "È NECESSARIO PASSARE LA VELOCITA COME PARAMETRO\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO\nLA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(min_fan_speed) + " E 100"
     update.message.reply_text(ret_str)
 
 
@@ -222,12 +222,12 @@ def main():
         filename=None,  # "bot.log",
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
-    XmlReader("settings.xml")
+    Config()
     cmd_str = ""
-    upd = Updater(XmlReader.settings['telegram_token'], use_context=True)
+    upd = Updater(Config.settings['telegram_token'], use_context=True)
     disp = upd.dispatcher
     disp.add_handler(CommandHandler("shutdown_system", shutdown_system))
-    if XmlReader.settings['function']['mining'] is True:
+    if Config.settings['function']['mining'] is True:
         cmd_str = cmd_str + "get_mining_status - Restituisce lo stato del miner\n"
         disp.add_handler(CommandHandler("get_mining_status", get_mining_status))
         cmd_str = cmd_str + "start_miner - Avvia il miner\n"
@@ -240,7 +240,7 @@ def main():
         disp.add_handler(CommandHandler("get_trex_profiles", get_trex_profiles))
         cmd_str = cmd_str + "set_trex_profile - Imposta il profilo per t-rex\n"
         disp.add_handler(CommandHandler("set_trex_profile", set_trex_profile))
-    if XmlReader.settings['function']['vpn'] is True:
+    if Config.settings['function']['vpn'] is True:
         cmd_str = cmd_str + "get_status_server_vpn - Restituisce lo stato del server VPN\n"
         disp.add_handler(CommandHandler("get_status_server_vpn", get_status_server_vpn))
         cmd_str = cmd_str + "start_server_vpn - Avvia il server VPN\n"
@@ -251,7 +251,7 @@ def main():
         disp.add_handler(CommandHandler("get_file_ovpn", get_file_ovpn))
         cmd_str = cmd_str + "get_public_ip - Restituisce IP pubblico del server\n"
         disp.add_handler(CommandHandler("get_public_ip", get_public_ip))
-    if XmlReader.settings['function']['ap'] is True:
+    if Config.settings['function']['ap'] is True:
         cmd_str = cmd_str + "start_access_point - Avvia l'access point\n"
         disp.add_handler(CommandHandler("start_access_point", start_access_point))
         cmd_str = cmd_str + "stop_access_point - Arresta l'access point\n"
@@ -259,10 +259,10 @@ def main():
         cmd_str = cmd_str + "get_access_point_status - Restituisce lo stato dell'access point\n"
         disp.add_handler(CommandHandler("get_access_point_status", get_access_point_status))
     cmd_str = cmd_str + "shutdown_system - Arresta il sistema"
-    with Client("my_account", XmlReader.settings['telegram_app']['api_id'], XmlReader.settings['telegram_app']['api_hash'], phone_number=XmlReader.settings['phone_number']) as app:
+    with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)
-        app.send_message("@BotFather", "@" + XmlReader.settings['bot_username'])
+        app.send_message("@BotFather", "@" + Config.settings['bot_telegram']['username'])
         sleep(1)
         app.send_message("@BotFather", cmd_str)
     upd.start_polling()
