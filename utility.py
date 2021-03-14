@@ -54,7 +54,7 @@ def make_request(url):
 
 
 def markdown_text(ret_str):
-    char_list = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    char_list = ['_', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     for c in char_list:
         ret_str = ret_str.replace(c, '\\' + c)
     return ret_str

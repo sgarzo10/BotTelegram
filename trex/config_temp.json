@@ -1,15 +1,15 @@
 {
 	"ab-indexing" : false,
 	"algo" : "ALGORITMO",
-	"api-bind-http" : "0.0.0.0:4067",
-	"api-bind-telnet" : "0.0.0.0:4068",
+	"api-bind-http" : "127.0.0.1:4067",
+	"api-bind-telnet" : "127.0.0.1:4068",
 	"api-read-only" : false,
 	"autoupdate" : false,
 	"back-to-main-pool-sec" : 600,
 	"coin" : "",
 	"cpu-priority" : 2,
-	"dag-build-mode" : "0",
-	"devices" : "0",
+	"dag-build-mode" : "0, 0, 0",
+	"devices" : "0, 1, 2",
 	"exit-on-connection-lost" : false,
 	"exit-on-cuda-error" : true,
 	"extra-dag-epoch" : -1,
@@ -18,11 +18,11 @@
 	"gpu-report-interval-s" : 0,
 	"hashrate-avr" : 60,
 	"hide-date" : true,
-	"intensity" : "INTENSITA",
+	"intensity" : "INTENSITA, INTENSITA, INTENSITA",
 	"keep-gpu-busy" : false,
-	"kernel" : "0",
+	"kernel" : "0,0,0",
 	"log-path" : "",
-	"low-load" : "0",
+	"low-load" : "0,0,0",
 	"monitoring-page" : 
 	{
 		"graph_interval_sec" : 3600,
@@ -40,7 +40,7 @@
 			"pass" : "x",
 			"url" : "POOL_URL",
 			"user" : "WALLET_ID",
-			"worker" : "sga-server"
+			"worker" : "nome del rig"
 		}
 	],
 	"protocol-dump" : false,
@@ -57,5 +57,5 @@
 	"temperature-start" : 0,
 	"time-limit" : 0,
 	"timeout" : 300,
-	"worker" : "sga-server"
+	"worker" : "nome del rig"
 }

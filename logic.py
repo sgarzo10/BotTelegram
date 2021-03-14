@@ -7,27 +7,38 @@ from logging import exception
 
 
 def get_nvidia_info():
-    response = make_cmd("nvidia-smi")
     exclude_list = ["", "|", "/"]
-    value = []
-    gpu_info = {}
+    gpus = []
+    response = make_cmd("nvidia-smi -L")
+    if response['cmd_err'] == "":
+        rows = response["cmd_out"].split("\n")
+        for r in rows[:-1]:
+            gpu_info = {
+                'uuid': r.split("GPU-")[1].split(")")[0].replace("-", "")
+            }
+            gpus.append(gpu_info)
+    response = make_cmd("nvidia-smi")
     if response['cmd_err'] == "":
         rows = response["cmd_out"].split("\n")
         i = 0
+        j = 0
         for r in rows:
             if r.__contains__("%"):
-                break
+                gpus[j]['indice'] = i
+                j += 1
             i += 1
-        for r in rows[i].split(" "):
-            if r not in exclude_list:
-                value.append(r)
-        gpu_info['fan'] = value[0]
-        gpu_info['temp'] = value[1]
-        gpu_info['power'] = value[3]
-        gpu_info['mem_used'] = value[5].replace("MiB", "")
-        gpu_info['mem_free'] = str(int(value[6].replace("MiB", "")) - int(value[5].replace("MiB", "")))
-        gpu_info['load'] = value[7]
-    return gpu_info
+        for gpu in gpus:
+            value = []
+            for r in rows[gpu['indice']].split(" "):
+                if r not in exclude_list:
+                    value.append(r)
+            gpu['fan'] = value[0]
+            gpu['temp'] = value[1]
+            gpu['power'] = value[3]
+            gpu['mem_used'] = value[5].replace("MiB", "")
+            gpu['mem_free'] = str(int(value[6].replace("MiB", "")) - int(value[5].replace("MiB", "")))
+            gpu['load'] = value[7]
+    return gpus
 
 
 def calculate_uptime(total_second):
@@ -57,16 +68,26 @@ def get_trex_info():
         trex_info['uptime'] = calculate_uptime(trex['uptime'])
         trex_info['pool_url'] = trex['active_pool']['url']
         trex_info['wallet_id'] = trex['active_pool']['user']
-        trex_info['cur_trex_profile'] = find_trex_profile(trex_info['pool_url'], trex_info['wallet_id'])
-        trex_info['intensity'] = str(trex['gpus'][0]['intensity'])
-        trex_info['reported_hashrate'] = str(round(trex['gpus'][0]['hashrate'] / 1000000, 1))
-        trex_info['gpu_name'] = trex['gpus'][0]['vendor'] + " " + trex['gpus'][0]['name']
-        trex_info['gpu_efficency'] = 'N/A'
-        if 'efficiency' in trex['gpus'][0]:
-            trex_info['gpu_efficency'] = trex['gpus'][0]['efficiency']
+        trex_info['total_reported_hashrate'] = str(round(trex['hashrate'] / 1000000, 1))
         trex_info['total_share'] = str(trex['accepted_count'])
         trex_info['share_min'] = str(trex['sharerate'])
         trex_info['share_min_avg'] = str(trex['sharerate_average'])
+        trex_info['cur_trex_profile'] = find_trex_profile(trex_info['pool_url'], trex_info['wallet_id'])
+        trex_info['gpus'] = []
+        i = 0
+        for gpu in trex['gpus']:
+            gpu_info = {
+                'intensity': str(gpu['intensity']),
+                'reported_hashrate': str(round(gpu['hashrate'] / 1000000, 1)),
+                'gpu_name': gpu['vendor'] + " " + gpu['name'],
+                'gpu_efficency': 'N/A',
+                'accepted_count': str(trex['stat_by_gpu'][i]['accepted_count']),
+                'uuid': gpu['uuid']
+            }
+            if 'efficiency' in gpu:
+                gpu_info['gpu_efficency'] = gpu['efficiency']
+            trex_info['gpus'].append(gpu_info)
+            i += 1
     return trex_info
 
 

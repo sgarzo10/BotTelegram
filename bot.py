@@ -24,6 +24,15 @@ def get_file_ovpn(update, context):
         update.message.reply_text(response)
 
 
+def union_nvidia_trex(nvidia, trex):
+    gpu_list = []
+    for n in nvidia:
+        for t in trex:
+            if n['uuid'] == t['uuid']:
+                gpu_list.append(n | t)
+    return gpu_list
+
+
 def get_mining_status(update, context):
     info("REQUEST: get_mining_status")
     try:
@@ -31,32 +40,46 @@ def get_mining_status(update, context):
         if XmlReader.settings['meross_credential'] != {}:
             meross_info = get_meross_info()
             if meross_info['state'] is True:
-                electricity = "*TOTAL POWER CONSUME:* " + meross_info['power'] + " W"
-                ret_str = electricity + "\n" + separator
+                ret_str = "*TOTAL POWER CONSUME:* " + meross_info['power'] + " W" + "\n"
         trex_info = get_trex_info()
+        general_str = "------------------------ *GENERAL* ------------------------\n"
         uptime = "*UPTIME:* " + trex_info['uptime']
         pool_url = "*POOL:* " + trex_info['pool_url']
         wallet_id = "*WALLET:* " + trex_info['wallet_id']
         total_share = "*SHA TOT:* " + trex_info['total_share']
         share_min = "*MIN:* " + trex_info['share_min']
         share_min_avg = "*AVG:* " + trex_info['share_min_avg']
-        gpu_name = "*GPU:* " + trex_info['gpu_name']
-        gpu_efficency = "*EFFICIENCY:* " + trex_info['gpu_efficency']
-        reported_hashrate = "*R:* " + trex_info['reported_hashrate'] + " MH/s"
-        intensity = "*INTENSITY:* " + trex_info['intensity']
-        gpu_info = get_nvidia_info()
-        gpu_fan = "*FAN:* " + gpu_info['fan']
-        gpu_temp = "*TEMP:* " + gpu_info['temp']
-        gpu_pow = "*POW:* " + gpu_info['power']
-        gpu_mem_used = "*RAM USE:* " + gpu_info['mem_used'] + "MB"
-        gpu_mem_free = "*FREE:* " + gpu_info['mem_free'] + "MB"
-        gpu_usage = "*LOAD:* " + gpu_info['load']
+        general_str = general_str + uptime + "\n" + wallet_id + "\n" + pool_url + "\n" + total_share + " " + share_min + " " + share_min_avg + "\n"
+        gpu_str = "------------------------ *GPU LIST* ------------------------\n"
+        first = True
+        for gpu in union_nvidia_trex(get_nvidia_info(), trex_info['gpus']):
+            if not first:
+                gpu_str = gpu_str + separator
+            else:
+                first = False
+            gpu_name = "*GPU:* " + gpu['gpu_name']
+            gpu_efficency = "*EFFICIENCY:* " + gpu['gpu_efficency']
+            intensity = "*INTENSITY:* " + gpu['intensity']
+            accepted_count = "*SHARE:* " + gpu['accepted_count']
+            reported_hashrate = "*HASHRATE:* " + gpu['reported_hashrate'] + " MH/s"
+            gpu_fan = "*FAN:* " + gpu['fan']
+            gpu_temp = "*TEMP:* " + gpu['temp']
+            gpu_pow = "*POW:* " + gpu['power']
+            gpu_mem_used = "*RAM USE:* " + gpu['mem_used'] + "MB"
+            gpu_mem_free = "*FREE:* " + gpu['mem_free'] + "MB"
+            gpu_usage = "*LOAD:* " + gpu['load']
+            gpu_str = gpu_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n" + reported_hashrate + " " + accepted_count + "\n"
+            gpu_str = gpu_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n"
         miner_info = get_miner_info(trex_info['cur_trex_profile'], trex_info['wallet_id'])
+        pay_str = "------------------------ *PAYOUT* ------------------------\n"
         immature_balance = ""
         if 'immature_balance' in miner_info:
             immature_balance = "*IMMATURE:* " + miner_info['immature_balance'] + "\n"
         unpaid_balance = "*UNPAID:* " + miner_info['unpaid_balance']
         estimated_earning = "*EST:* " + miner_info['estimated_earning']
+        pay_str = pay_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n"
+        work_str = "------------------------ *WORKER* ------------------------\n"
+        total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate'] + " MH/s"
         current_hashrate = "*C:* " + miner_info['current_hashrate'] + " MH/s"
         average_hashrate = "*A(6h):* " + miner_info['average_hashrate'] + " MH/s"
         active_worker = "*WORKERS:* " + miner_info['active_worker']
@@ -67,12 +90,9 @@ def get_mining_status(update, context):
             valid_shares = "*SHARES:* " + miner_info['valid_shares'] + "*V*"
             stale_shares = miner_info['stale_shares'] + "*S*"
             invalid_shares = miner_info['invalid_shares'] + "*I*"
-        ret_str = ret_str + uptime + "\n" + wallet_id + "\n" + pool_url + "\n" + total_share + " " + share_min + " " + share_min_avg + "\n" + separator
-        ret_str = ret_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n"
-        ret_str = ret_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n" + separator
-        ret_str = ret_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n" + separator
-        ret_str = ret_str + reported_hashrate + " " + current_hashrate + " " + average_hashrate + "\n"
-        ret_str = ret_str + active_worker + " " + valid_shares + " " + stale_shares + " " + invalid_shares
+        work_str = work_str + total_reported_hashrate + " " + current_hashrate + " " + average_hashrate + "\n"
+        work_str = work_str + active_worker + " " + valid_shares + " " + stale_shares + " " + invalid_shares
+        ret_str = ret_str + general_str + gpu_str + pay_str + work_str
         update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
     except Exception as e:
         exception(e)
@@ -186,14 +206,14 @@ def set_gpu_speed_fan(update, context):
     info("REQUEST: set_gpu_speed_fan")
     if len(context.args) == 1:
         try:
-            if XmlReader.settings['function']['min_gpu_fan_speed'] <= int(context.args[0]) <= 100:
+            if XmlReader.settings['min_gpu_fan_speed'] <= int(context.args[0]) <= 100:
                 ret_str = be_set_gpu_speed_fan(context.args[0])
             else:
-                ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + XmlReader.settings['function']['min_gpu_fan_speed'] + " E 100"
+                ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(XmlReader.settings['min_gpu_fan_speed']) + " E 100"
         except ValueError as e:
             ret_str = "LA VELOCITA DEVE ESSERE UN NUMERO INTERO"
     else:
-        ret_str = "È NECESSARIO PASSARE LA VELOCITA COME PARAMETRO\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO\nLA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + XmlReader.settings['function']['min_gpu_fan_speed'] + " E 100"
+        ret_str = "È NECESSARIO PASSARE LA VELOCITA COME PARAMETRO\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO\nLA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(XmlReader.settings['min_gpu_fan_speed']) + " E 100"
     update.message.reply_text(ret_str)
 
 
