@@ -23,6 +23,19 @@ def get_file_ovpn(update, context):
         update.message.reply_text(response)
 
 
+def get_balance_status(update, context):
+    info("REQUEST: get_balance_status")
+    ret_str = ""
+    total_euro = 0
+    for key, value in Config.settings['cryptos'].items():
+        balance_info = get_balance_info(key, Config.settings['cryptos'][key]['wallets'])
+        total_euro = total_euro + balance_info['eur_value']
+        ret_str = ret_str + "------------------------ *" + key.upper() + "* ------------------------\n"
+        ret_str = ret_str + "*VALUE:* " + balance_info['conv_eur'] + "\n*CRYPTO:* " + balance_info['crypto_value'] + " *FIAT:* " + str(balance_info['eur_value']) + " €" + "\n"
+    ret_str = ret_str + separator + "*TOTAL EURO:* " + str(total_euro) + " €"
+    update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
+
+
 def union_nvidia_trex(nvidia, trex):
     gpu_list = []
     for t in trex:
@@ -70,7 +83,7 @@ def get_mining_status(update, context):
             gpu_str = gpu_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n" + reported_hashrate + " " + accepted_count + "\n"
             gpu_str = gpu_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n"
         miner_info = get_miner_info(trex_info['cur_trex_profile'], trex_info['wallet_id'])
-        balance_info = get_balance_info(Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto'], trex_info['wallet_id'])
+        balance_info = get_balance_info(Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto'], [trex_info['wallet_id']])
         pay_str = "------------------------ *PAYOUT* ------------------------\n"
         immature_balance = ""
         if 'immature_balance' in miner_info:
@@ -78,7 +91,7 @@ def get_mining_status(update, context):
         unpaid_balance = "*UNPAID:* " + miner_info['unpaid_balance']
         estimated_earning = "*EST:* " + miner_info['estimated_earning']
         total_earning = "*TOTAL CRYPTO*: " + balance_info['crypto_value']
-        total_earning_euro = "*TOTAL EURO*: " + balance_info['eur_value']
+        total_earning_euro = "*TOTAL EURO*: " + str(balance_info['eur_value']) + " €"
         pay_str = pay_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n" + total_earning + "\n" + total_earning_euro + "\n"
         work_str = "------------------------ *WORKER* ------------------------\n"
         total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate']
@@ -235,6 +248,8 @@ def main():
     disp = upd.dispatcher
     disp.add_handler(CommandHandler("shutdown_system", shutdown_system))
     if Config.settings['function']['mining'] is True:
+        cmd_str = cmd_str + "get_balance_status - Restituisce il bilancio di tutte le crypto\n"
+        disp.add_handler(CommandHandler("get_balance_status", get_balance_status))
         cmd_str = cmd_str + "get_mining_status - Restituisce lo stato del miner\n"
         disp.add_handler(CommandHandler("get_mining_status", get_mining_status))
         cmd_str = cmd_str + "start_miner - Avvia il miner\n"
