@@ -34,8 +34,8 @@ def get_nvidia_info():
             gpu['fan'] = value[0]
             gpu['temp'] = value[1]
             gpu['power'] = value[3]
-            gpu['mem_used'] = value[5].replace("MiB", "")
-            gpu['mem_free'] = str(int(value[6].replace("MiB", "")) - int(value[5].replace("MiB", "")))
+            gpu['mem_used'] = value[5].replace("MiB", "") + "MB"
+            gpu['mem_free'] = str(int(value[6].replace("MiB", "")) - int(value[5].replace("MiB", ""))) + "MB"
             gpu['load'] = value[7]
     return gpus
 
@@ -60,14 +60,14 @@ def calculate_uptime(total_second):
 
 
 def get_trex_info():
-    response = make_request("http://" + Config.settings['trex']['ip'] + ":4067/summary")
+    response = make_request("http://127.0.0.1:4067/summary")
     trex_info = {}
     if response['state'] is True:
         trex = loads(response['response'])
         trex_info['uptime'] = calculate_uptime(trex['uptime'])
         trex_info['pool_url'] = trex['active_pool']['url']
         trex_info['wallet_id'] = trex['active_pool']['user']
-        trex_info['total_reported_hashrate'] = str(round(trex['hashrate'] / 1000000, 1))
+        trex_info['total_reported_hashrate'] = str(round(trex['hashrate'] / 1000000, 1)) + " MH/s"
         trex_info['total_share'] = str(trex['accepted_count'])
         trex_info['share_min'] = str(trex['sharerate'])
         trex_info['share_min_avg'] = str(trex['sharerate_average'])
@@ -77,7 +77,7 @@ def get_trex_info():
         for gpu in trex['gpus']:
             gpu_info = {
                 'intensity': str(gpu['intensity']),
-                'reported_hashrate': str(round(gpu['hashrate'] / 1000000, 1)),
+                'reported_hashrate': str(round(gpu['hashrate'] / 1000000, 1)) + " MH/s",
                 'gpu_name': gpu['vendor'] + " " + gpu['name'],
                 'gpu_efficency': 'N/A',
                 'accepted_count': str(trex['stat_by_gpu'][i]['accepted_count']),
@@ -88,6 +88,21 @@ def get_trex_info():
             trex_info['gpus'].append(gpu_info)
             i += 1
     return trex_info
+
+
+def get_balance_info(crypto, wallet_id):
+    balance = {}
+    res = make_request(Config.settings['cryptos'][crypto]['api_balance'] + wallet_id)
+    res_conv = make_request("https://api.alternative.me/v2/ticker/" + crypto + "/?convert=EUR&structure=array")
+    crypto_value = 0
+    if res['state'] is True and res_conv['state'] is True:
+        if crypto == "ethereum":
+            crypto_value = float(str(res['response']).split("Balance:")[1].split("</")[2][2:-6]) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])
+        if crypto == "ravencoin":
+            crypto_value = float(loads(res['response'])['balance'])
+        balance['eur_value'] = str(round(loads(res_conv['response'])['data'][0]['quotes']['EUR']['price'] * crypto_value, 2)) + " €"
+        balance['crypto_value'] = str(round(crypto_value, 6)) + " " + Config.settings['cryptos'][crypto]['crypto']
+    return balance
 
 
 def get_miner_info(cur_trex_profile, wallet_id):
@@ -119,11 +134,11 @@ def get_ethermine_info(cur_trex_profile, wallet_id):
         dashboard = loads(response_dash['response'])
         payouts = loads(response_pay['response'])
         if 'unconfirmed' in dashboard['data']['currentStatistics']:
-            ethermine_info['immature_balance'] = str(round(dashboard['data']['currentStatistics']['unconfirmed'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
-        ethermine_info['unpaid_balance'] = str(round(dashboard['data']['currentStatistics']['unpaid'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
+            ethermine_info['immature_balance'] = str(round(dashboard['data']['currentStatistics']['unconfirmed'] / pow(10, crypto['pow_divisor']), 5)) + " " + crypto['crypto']
+        ethermine_info['unpaid_balance'] = str(round(dashboard['data']['currentStatistics']['unpaid'] / pow(10, crypto['pow_divisor']), 5)) + " " + crypto['crypto']
         ethermine_info['estimated_earning'] = str(round(payouts['data']['estimates']['coinsPerMin'] * 1440, 5)) + " " + crypto['crypto']
-        ethermine_info['current_hashrate'] = str(round(dashboard['data']['currentStatistics']['currentHashrate'] / 1000000, 1))
-        ethermine_info['average_hashrate'] = calculate_avg_hasrate(dashboard['data']['currentStatistics']['time'], dashboard['data']['statistics'], 'time', 'currentHashrate')
+        ethermine_info['current_hashrate'] = str(round(dashboard['data']['currentStatistics']['currentHashrate'] / 1000000, 1)) + " MH/s"
+        ethermine_info['average_hashrate'] = calculate_avg_hasrate(dashboard['data']['currentStatistics']['time'], dashboard['data']['statistics'], 'time', 'currentHashrate') + " MH/s"
         ethermine_info['active_worker'] = str(dashboard['data']['currentStatistics']['activeWorkers'])
         ethermine_info['valid_shares'] = str(dashboard['data']['currentStatistics']['validShares'])
         ethermine_info['stale_shares'] = str(dashboard['data']['currentStatistics']['staleShares'])
@@ -139,11 +154,11 @@ def get_2miners_info(cur_trex_profile, wallet_id):
     if response_dash['state'] is True:
         dashboard = loads(response_dash['response'])
         if 'immature' in dashboard['stats']:
-            two_miners_info['immature_balance'] = str(round(dashboard['stats']['immature'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
-        two_miners_info['unpaid_balance'] = str(round(dashboard['stats']['balance'] / pow(10, crypto['divisor']), 5)) + " " + crypto['crypto']
-        two_miners_info['estimated_earning'] = str(round((dashboard['sumrewards'][0]['reward'] / pow(10, crypto['divisor'])) * 24, 5)) + " " + crypto['crypto']
-        two_miners_info['current_hashrate'] = str(round(dashboard['currentHashrate'] / 1000000, 1))
-        two_miners_info['average_hashrate'] = calculate_avg_hasrate(dashboard['updatedAt'] // 1000, dashboard['minerCharts'], 'x', 'minerHash')
+            two_miners_info['immature_balance'] = str(round(dashboard['stats']['immature'] / pow(10, crypto['pow_divisor']), 5)) + " " + crypto['crypto']
+        two_miners_info['unpaid_balance'] = str(round(dashboard['stats']['balance'] / pow(10, crypto['pow_divisor']), 5)) + " " + crypto['crypto']
+        two_miners_info['estimated_earning'] = str(round((dashboard['sumrewards'][0]['reward'] / pow(10, crypto['pow_divisor'])) * 24, 5)) + " " + crypto['crypto']
+        two_miners_info['current_hashrate'] = str(round(dashboard['currentHashrate'] / 1000000, 1)) + " MH/s"
+        two_miners_info['average_hashrate'] = calculate_avg_hasrate(dashboard['updatedAt'] // 1000, dashboard['minerCharts'], 'x', 'minerHash') + " MH/s"
         two_miners_info['active_worker'] = str(dashboard['workersOnline'])
     return two_miners_info
 
@@ -159,7 +174,7 @@ def get_meross_info():
         for dev in devices:
             if dev['devName'] == Config.settings['meross']['device_name'] and dev['onlineStatus'] == 1:
                 devices = http_handler.list_supported_devices()
-                device_info['power'] = str(round(devices[i].get_electricity()['electricity']['power'] / 1000, 2))
+                device_info['power'] = str(round(devices[i].get_electricity()['electricity']['power'] / 1000, 2)) + " W"
                 device_info['state'] = True
                 break
             i += 1
@@ -169,7 +184,7 @@ def get_meross_info():
 
 
 def be_stop_miner():
-    response = make_request("http://" + Config.settings['trex']['ip'] + ":4067/control?command=shutdown")
+    response = make_request("http://127.0.0.1:4067/control?command=shutdown")
     if response['state'] is True:
         if loads(response['response'])['success'] == 1:
             ret_str = "SPENTO MINER"
@@ -221,9 +236,9 @@ def be_set_trex_profile(profile):
     return ret_str
 
 
-def be_set_gpu_speed_fan(speed):
+def be_set_gpu_speed_fan(name, speed):
     try:
-        file_path = Config.settings['afterburner']['path'] + 'Profiles\\' + Config.settings['afterburner']['gpus'][0]['config_file']
+        file_path = Config.settings['afterburner']['path'] + 'Profiles\\' + Config.settings['afterburner']['gpus'][name]['config_file']
         f = open(file_path, 'r')
         data_file = f.read()
         f.close()

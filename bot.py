@@ -1,7 +1,7 @@
 from telegram.ext import Updater, CommandHandler
 from logging import basicConfig, info, INFO, exception
 from utility import make_cmd, markdown_text, Config
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info
 from pyrogram import Client
 from time import sleep
 
@@ -39,7 +39,7 @@ def get_mining_status(update, context):
         if Config.settings['meross'] != {}:
             meross_info = get_meross_info()
             if meross_info['state'] is True:
-                ret_str = "*TOTAL POWER CONSUME:* " + meross_info['power'] + " W" + "\n"
+                ret_str = "*TOTAL POWER CONSUME:* " + meross_info['power'] + "\n"
         trex_info = get_trex_info()
         general_str = "------------------------ *GENERAL* ------------------------\n"
         uptime = "*UPTIME:* " + trex_info['uptime']
@@ -60,27 +60,30 @@ def get_mining_status(update, context):
             gpu_efficency = "*EFFICIENCY:* " + gpu['gpu_efficency']
             intensity = "*INTENSITY:* " + gpu['intensity']
             accepted_count = "*SHARE:* " + gpu['accepted_count']
-            reported_hashrate = "*HASHRATE:* " + gpu['reported_hashrate'] + " MH/s"
+            reported_hashrate = "*HASHRATE:* " + gpu['reported_hashrate']
             gpu_fan = "*FAN:* " + gpu['fan']
             gpu_temp = "*TEMP:* " + gpu['temp']
             gpu_pow = "*POW:* " + gpu['power']
-            gpu_mem_used = "*RAM USE:* " + gpu['mem_used'] + "MB"
-            gpu_mem_free = "*FREE:* " + gpu['mem_free'] + "MB"
+            gpu_mem_used = "*RAM USE:* " + gpu['mem_used']
+            gpu_mem_free = "*FREE:* " + gpu['mem_free']
             gpu_usage = "*LOAD:* " + gpu['load']
             gpu_str = gpu_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n" + reported_hashrate + " " + accepted_count + "\n"
             gpu_str = gpu_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n"
         miner_info = get_miner_info(trex_info['cur_trex_profile'], trex_info['wallet_id'])
+        balance_info = get_balance_info(Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto'], trex_info['wallet_id'])
         pay_str = "------------------------ *PAYOUT* ------------------------\n"
         immature_balance = ""
         if 'immature_balance' in miner_info:
             immature_balance = "*IMMATURE:* " + miner_info['immature_balance'] + "\n"
         unpaid_balance = "*UNPAID:* " + miner_info['unpaid_balance']
         estimated_earning = "*EST:* " + miner_info['estimated_earning']
-        pay_str = pay_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n"
+        total_earning = "*TOTAL CRYPTO*: " + balance_info['crypto_value']
+        total_earning_euro = "*TOTAL EURO*: " + balance_info['eur_value']
+        pay_str = pay_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n" + total_earning + "\n" + total_earning_euro + "\n"
         work_str = "------------------------ *WORKER* ------------------------\n"
-        total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate'] + " MH/s"
-        current_hashrate = "*C:* " + miner_info['current_hashrate'] + " MH/s"
-        average_hashrate = "*A(6h):* " + miner_info['average_hashrate'] + " MH/s"
+        total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate']
+        current_hashrate = "*C:* " + miner_info['current_hashrate']
+        average_hashrate = "*A(6h):* " + miner_info['average_hashrate']
         active_worker = "*WORKERS:* " + miner_info['active_worker']
         valid_shares = ""
         stale_shares = ""
@@ -136,7 +139,7 @@ def stop_server_vpn(update, context):
 
 
 def get_status_server_vpn(update, context):
-    info("1REQUEST: get_status_server_vpn")
+    info("REQUEST: get_status_server_vpn")
     update.message.reply_text(get_program_status("openvpn-gui", "OPENVPN"))
 
 
@@ -146,10 +149,10 @@ def get_trex_profiles(update, context):
     for key, value in Config.settings['trex']['profiles'].items():
         name = "*NAME:* " + key
         crypto = "*CRYPTO:* " + value['crypto']
-        intensity = "*INTENSITY:* " + value['intensity']
+        intensity = "*INTENSITY:* " + str(value['intensity'])[1:-1]
         pool_url = "*POOL URL:* " + value['pool_url']
         wallet_id = "*WALLET ID:* " + value['wallet']
-        ret_str = ret_str + name + " " + crypto + " " + intensity + "\n" + pool_url + "\n" + wallet_id + "\n" + separator
+        ret_str = ret_str + name + " " + crypto + "\n" + intensity + "\n" + pool_url + "\n" + wallet_id + "\n" + separator
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
 
 
@@ -203,17 +206,21 @@ def get_access_point_status(update, context):
 
 def set_gpu_speed_fan(update, context):
     info("REQUEST: set_gpu_speed_fan")
-    min_fan_speed = Config.settings['afterburner']['gpus'][0]['min_fan_speed']
-    if len(context.args) == 1:
-        try:
-            if min_fan_speed <= int(context.args[0]) <= 100:
-                ret_str = be_set_gpu_speed_fan(context.args[0])
-            else:
-                ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(min_fan_speed) + " E 100"
-        except ValueError as e:
-            ret_str = "LA VELOCITA DEVE ESSERE UN NUMERO INTERO"
+    gpu_list = Config.settings['afterburner']['gpus'].keys()
+    if len(context.args) == 2:
+        if context.args[0] in gpu_list:
+            try:
+                min_fan_speed = Config.settings['afterburner']['gpus'][context.args[0]]['min_fan_speed']
+                if min_fan_speed <= int(context.args[1]) <= 100:
+                    ret_str = be_set_gpu_speed_fan(context.args[0], context.args[1])
+                else:
+                    ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(min_fan_speed) + " E 100"
+            except ValueError as e:
+                ret_str = "LA VELOCITA DEVE ESSERE UN NUMERO INTERO"
+        else:
+            ret_str = "GPU INESISTENTE\nIL NOME DELLA GPU PUO ESSERE: " + ', '.join(gpu_list)
     else:
-        ret_str = "È NECESSARIO PASSARE LA VELOCITA COME PARAMETRO\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO\nLA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(min_fan_speed) + " E 100"
+        ret_str = "È NECESSARIO SPECIFICARE DUE PARAMETRI: NOME GPU E VELOCITA\nIL NOME DELLA GPU PUO ESSERE: " + ', '.join(gpu_list) + "\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO"
     update.message.reply_text(ret_str)
 
 
@@ -224,7 +231,7 @@ def main():
         level=INFO)
     Config()
     cmd_str = ""
-    upd = Updater(Config.settings['telegram_token'], use_context=True)
+    upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
     disp = upd.dispatcher
     disp.add_handler(CommandHandler("shutdown_system", shutdown_system))
     if Config.settings['function']['mining'] is True:

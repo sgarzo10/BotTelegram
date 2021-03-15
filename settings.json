@@ -15,12 +15,12 @@
 	},
 	"afterburner": {
 		"path": "path msi afterburner",
-		"gpus": [
-			{
+		"gpus": {
+			"nome della gpu": {
 				"config_file": "nome file cfg per msi afterburner",
 				"min_fan_speed": "velocita minima gpu (numero intero)"
 			}
-		]
+		}
 	},
 	"meross": {
 		"email": "email per meross",
@@ -36,7 +36,6 @@
 		}
 	},
 	"trex": {
-		"ip": "ip per interrogare trex",
 		"worker_name": "nome del worker",
 		"gpu_number": "numero di gpu montate sul worker (numero intero)",
 		"profiles": {
