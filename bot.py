@@ -28,11 +28,13 @@ def get_balance_status(update, context):
     ret_str = ""
     total_euro = 0
     for key, value in Config.settings['cryptos'].items():
-        balance_info = get_balance_info(key, Config.settings['cryptos'][key]['wallets'])
-        total_euro = total_euro + balance_info['eur_value']
-        ret_str = ret_str + "------------------------ *" + key.upper() + "* ------------------------\n"
-        ret_str = ret_str + "*VALUE:* " + balance_info['conv_eur'] + "\n*CRYPTO:* " + balance_info['crypto_value'] + " *FIAT:* " + str(balance_info['eur_value']) + " €" + "\n"
-    ret_str = ret_str + separator + "*TOTAL EURO:* " + str(total_euro) + " €"
+        balance_info = get_balance_info(key, value['wallets'])
+        total_euro = total_euro + balance_info['tot_eur_value']
+        ret_str = ret_str + "------------------------ *" + key.upper() + "* ------------------------\n*VALUE:* " + balance_info['conv_eur'] + "   *WALLET NUMBER:* " + str(len(balance_info['walletts'].keys())) + "\n" + separator
+        for key_b, value_b in balance_info['walletts'].items():
+            ret_str = ret_str + "*WALLET:* " + key_b.replace("_", " ").title() + "\n*ID*: " + value_b['id'] + "\n*CRYPTO:* " + value_b['crypto_value'] + " *FIAT:* " + value_b['eur_value'] + "\n" + separator
+        ret_str = ret_str + "*TOT CRYPTO:* " + balance_info['tot_crypto_value'] + " *FIAT:* " + str(balance_info['tot_eur_value']) + " €\n"
+    ret_str = ret_str + "------------------------ *FINAL RECAP* ------------------------\n*TOTAL EURO:* " + str(round(total_euro, 2)) + " €"
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
 
 
@@ -83,16 +85,16 @@ def get_mining_status(update, context):
             gpu_str = gpu_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n" + reported_hashrate + " " + accepted_count + "\n"
             gpu_str = gpu_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n"
         miner_info = get_miner_info(trex_info['cur_trex_profile'], trex_info['wallet_id'])
-        balance_info = get_balance_info(Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto'], [trex_info['wallet_id']])
+        balance_info = get_balance_info(Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto'], {"trex": trex_info['wallet_id']})
         pay_str = "------------------------ *PAYOUT* ------------------------\n"
         immature_balance = ""
         if 'immature_balance' in miner_info:
             immature_balance = "*IMMATURE:* " + miner_info['immature_balance'] + "\n"
         unpaid_balance = "*UNPAID:* " + miner_info['unpaid_balance']
         estimated_earning = "*EST:* " + miner_info['estimated_earning']
-        total_earning = "*TOTAL CRYPTO*: " + balance_info['crypto_value']
-        total_earning_euro = "*TOTAL EURO*: " + str(balance_info['eur_value']) + " €"
-        pay_str = pay_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n" + total_earning + "\n" + total_earning_euro + "\n"
+        total_earning = "*TOT CRYPTO*: " + balance_info['tot_crypto_value']
+        total_earning_euro = "*FIAT*: " + str(balance_info['tot_eur_value']) + " €"
+        pay_str = pay_str + immature_balance + unpaid_balance + " " + estimated_earning + "\n" + total_earning + " " + total_earning_euro + "\n"
         work_str = "------------------------ *WORKER* ------------------------\n"
         total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate']
         current_hashrate = "*C:* " + miner_info['current_hashrate']

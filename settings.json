@@ -33,7 +33,9 @@
 			"algo": "algoritmo per il mining",
 			"api_balance": "end point per il recupero del bilancio",
 			"pow_divisor": "potenza del 10 per divisore per revenue (numero intero)",
-			"wallets": "lista dei wallet da monitorare (lista di stringhe)"
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
 		}
 	},
 	"trex": {

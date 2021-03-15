@@ -93,13 +93,14 @@ def get_trex_info():
 def get_balance_info(crypto, wallet_ids):
     res_conv = make_request("https://api.alternative.me/v2/ticker/" + crypto + "/?convert=EUR&structure=array")
     balance = {
+        'walletts': {},
         'conv_eur': loads(res_conv['response'])['data'][0]['quotes']['EUR']['price'],
-        'eur_value': 0.00000000,
-        'crypto_value': 0.00000000
+        'tot_eur_value': 0.00000000,
+        'tot_crypto_value': 0.00000000
     }
     if res_conv['state'] is True:
-        for wallet_id in wallet_ids:
-            res = make_request(Config.settings['cryptos'][crypto]['api_balance'] + wallet_id)
+        for key, value in wallet_ids.items():
+            res = make_request(Config.settings['cryptos'][crypto]['api_balance'] + value)
             crypto_value = 0
             if res['state'] is True:
                 if crypto == "ethereum":
@@ -108,10 +109,15 @@ def get_balance_info(crypto, wallet_ids):
                     crypto_value = float(loads(res['response'])['balance'])
                 if crypto == "callisto":
                     crypto_value = float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])
-                balance['eur_value'] = balance['eur_value'] + balance['conv_eur'] * crypto_value
-                balance['crypto_value'] = balance['crypto_value'] + crypto_value
-        balance['eur_value'] = round(balance['eur_value'], 2)
-        balance['crypto_value'] = str(round(balance['crypto_value'], 6)) + " " + Config.settings['cryptos'][crypto]['crypto']
+                balance['walletts'][key] = {
+                    'id': value,
+                    'eur_value': str(round(balance['conv_eur'] * crypto_value, 2)) + " €",
+                    'crypto_value': str(round(crypto_value, 6)) + " " + Config.settings['cryptos'][crypto]['crypto']
+                }
+                balance['tot_eur_value'] = balance['tot_eur_value'] + balance['conv_eur'] * crypto_value
+                balance['tot_crypto_value'] = balance['tot_crypto_value'] + crypto_value
+        balance['tot_eur_value'] = round(balance['tot_eur_value'], 2)
+        balance['tot_crypto_value'] = str(round(balance['tot_crypto_value'], 6)) + " " + Config.settings['cryptos'][crypto]['crypto']
     balance['conv_eur'] = str(round(balance['conv_eur'], 6)) + " €"
     return balance
 
