@@ -1,4 +1,5 @@
 from telegram.ext import Updater, Filters, CommandHandler
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info
@@ -229,6 +230,19 @@ def set_gpu_speed_fan(update, context):
     update.message.reply_text(ret_str)
 
 
+def get_keyboard(update, context):
+    initial_log("get_keyboard", context.args)
+    trex_profile_list = Config.settings['trex']['profiles'].keys()
+    button_list = []
+    for i in range(0, len(trex_profile_list), 2):
+        profiles = trex_profile_list[i:i + 2]
+        row = []
+        for profile in profiles:
+            row.append(KeyboardButton(profile))
+        button_list.append(row)
+    update.message.reply_text("prova prova", reply_markup=ReplyKeyboardMarkup(button_list, resize_keyboard=True))
+
+
 def my_add_handler(struct_commands, cmd_str, disp, cmd_filter):
     for key, value in struct_commands.items():
         cmd_str = cmd_str + key + " - " + value + "\n"
@@ -266,7 +280,8 @@ def main():
         },
         "cross": {
             "shutdown_system": "Arresta il sistema",
-            "get_public_ip": "Restituisce IP pubblico del server"
+            "get_public_ip": "Restituisce IP pubblico del server",
+            "get_keyboard": "prova"
         }
     }
     cmd_str = ""
