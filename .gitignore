@@ -9,3 +9,4 @@
 /build/*
 /my_account.session
 /bot.spec
+.DS_Store

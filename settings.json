@@ -1,8 +1,10 @@
 {
+	"users_abil": ["username abilitati ad utilizzare il bot (lista di stringhe)"],
 	"function": {
+		"mining": "true o false (boolean)",
 		"vpn": "true o false (boolean)",
 		"ap": "true o false (boolean)",
-		"mining": "true o false (boolean)"
+		"cross": "true o false (boolean)"
 	},
 	"bot_telegram": {
 		"token": "token rilasciato da BotFather",
@@ -32,6 +34,7 @@
 			"crypto": "crypto generata (es. ETH, RVN)",
 			"algo": "algoritmo per il mining",
 			"api_balance": "end point per il recupero del bilancio",
+			"function_balance": "codice da eseguire con eval per parsare la response di api_balance",
 			"pow_divisor": "potenza del 10 per divisore per revenue (numero intero)",
 			"wallets": {
 				"nome del wallet": "id del wallet"

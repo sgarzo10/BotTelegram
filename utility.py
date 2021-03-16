@@ -61,5 +61,18 @@ def markdown_text(ret_str):
     return ret_str
 
 
+def get_separator(title=None):
+    ret_str = "-------------------------------------------------------------------\n"
+    if title is not None:
+        ret_str = "------------------------ *" + title + "* ------------------------\n"
+    return ret_str
+
+
+def initial_log(function_name, param_list):
+    info("REQUEST: %s - PARAMETERS NUMBER: %s", function_name, len(param_list))
+    for par in param_list:
+        info("PARAMETER: %s", par)
+
+
 class Config:
     settings = load(open("settings.json"))

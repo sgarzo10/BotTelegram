@@ -101,14 +101,8 @@ def get_balance_info(crypto, wallet_ids):
     if res_conv['state'] is True:
         for key, value in wallet_ids.items():
             res = make_request(Config.settings['cryptos'][crypto]['api_balance'] + value)
-            crypto_value = 0
             if res['state'] is True:
-                if crypto == "ethereum":
-                    crypto_value = float(str(res['response']).split("Balance:")[1].split("</")[2][2:-6]) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])
-                if crypto == "ravencoin":
-                    crypto_value = float(loads(res['response'])['balance'])
-                if crypto == "callisto":
-                    crypto_value = float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])
+                crypto_value = eval(Config.settings['cryptos'][crypto]['function_balance'])
                 balance['walletts'][key] = {
                     'id': value,
                     'eur_value': str(round(balance['conv_eur'] * crypto_value, 2)) + " €",
