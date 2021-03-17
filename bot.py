@@ -1,5 +1,5 @@
-from telegram.ext import Updater, Filters, CommandHandler
-from telegram import ReplyKeyboardMarkup, KeyboardButton
+from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info
@@ -152,13 +152,18 @@ def get_status_server_vpn(update, context):
 def get_trex_profiles(update, context):
     initial_log("get_trex_profile", context.args)
     ret_str = ""
+    first = True
     for key, value in Config.settings['trex']['profiles'].items():
+        if not first:
+            ret_str += get_separator()
+        else:
+            first = False
         name = "*NAME:* " + key
         crypto = "*CRYPTO:* " + value['crypto']
         intensity = "*INTENSITY:* " + str(value['intensity'])[1:-1]
         pool_url = "*POOL URL:* " + value['pool_url']
         wallet_id = "*WALLET ID:* " + value['wallet']
-        ret_str = ret_str + name + " " + crypto + "\n" + intensity + "\n" + pool_url + "\n" + wallet_id + "\n" + get_separator()
+        ret_str += name + " " + crypto + "\n" + intensity + "\n" + pool_url + "\n" + wallet_id + "\n"
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
 
 
@@ -169,16 +174,23 @@ def start_miner(update, context):
 
 
 def set_trex_profile(update, context):
-    initial_log("set_trex_profile", context.args)
-    trex_profile_list = Config.settings['trex']['profiles'].keys()
-    if len(context.args) == 1:
-        if context.args[0] in trex_profile_list:
-            ret_str = be_set_trex_profile(context.args[0])
-        else:
-            ret_str = "PROFILO INESISTENTE\nIL PROFILO PUO ESSERE: " + ', '.join(trex_profile_list)
+    if context.args is not None:
+        initial_log("set_trex_profile", context.args)
+        trex_profile_list = list(Config.settings['trex']['profiles'].keys())
+        button_list = []
+        for i in range(0, len(trex_profile_list), 2):
+            profiles = trex_profile_list[i:i + 2]
+            row = []
+            for profile in profiles:
+                row.append(InlineKeyboardButton(profile, callback_data="set_trex_profile " + profile))
+            button_list.append(row)
+        update.message.reply_text("SCEGLI UN PROFILO", reply_markup=InlineKeyboardMarkup(button_list))
     else:
-        ret_str = "È NECESSARIO PASSARE IL PROFILO COME PARAMETRO\nIL PROFILO PUO ESSERE: " + ', '.join(trex_profile_list)
-    update.message.reply_text(ret_str)
+        callback_data = update.callback_query.data
+        initial_log("set_trex_profile", callback_data.split(" ")[1:])
+        ret_str = be_set_trex_profile(callback_data.replace("set_trex_profile ", ""))
+        update.callback_query.answer()
+        update.callback_query.message.edit_text(text=ret_str)
 
 
 def start_access_point(update, context):
@@ -230,24 +242,12 @@ def set_gpu_speed_fan(update, context):
     update.message.reply_text(ret_str)
 
 
-def get_keyboard(update, context):
-    initial_log("get_keyboard", context.args)
-    trex_profile_list = Config.settings['trex']['profiles'].keys()
-    button_list = []
-    for i in range(0, len(trex_profile_list), 2):
-        profiles = trex_profile_list[i:i + 2]
-        row = []
-        for profile in profiles:
-            row.append(KeyboardButton(profile))
-        button_list.append(row)
-    update.message.reply_text("prova prova", reply_markup=ReplyKeyboardMarkup(button_list, resize_keyboard=True))
-
-
-def my_add_handler(struct_commands, cmd_str, disp, cmd_filter):
+def my_add_handler(struct_commands, disp, cmd_filter):
+    ret_str = ""
     for key, value in struct_commands.items():
-        cmd_str = cmd_str + key + " - " + value + "\n"
+        ret_str += key + " - " + value + "\n"
         disp.add_handler(CommandHandler(key, eval(key), cmd_filter))
-    return cmd_str
+    return ret_str
 
 
 def main():
@@ -280,14 +280,14 @@ def main():
         },
         "cross": {
             "shutdown_system": "Arresta il sistema",
-            "get_public_ip": "Restituisce IP pubblico del server",
-            "get_keyboard": "prova"
+            "get_public_ip": "Restituisce IP pubblico del server"
         }
     }
     cmd_str = ""
     for key, value in Config.settings['function'].items():
         if value is True:
-            cmd_str = cmd_str + my_add_handler(commands[key], cmd_str, upd.dispatcher, Filters.user(username=set(Config.settings['users_abil'])))
+            cmd_str += my_add_handler(commands[key], upd.dispatcher, Filters.user(username=set(Config.settings['users_abil'])))
+    upd.dispatcher.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)

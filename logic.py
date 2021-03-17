@@ -240,7 +240,7 @@ def be_set_trex_profile(profile):
         f = open('trex/config.json', 'w')
         f.write(data_file)
         f.close()
-        ret_str = "PROFILO DI T-REX SETTATO"
+        ret_str = "SETTATO PROFILO: %s" % profile
     except Exception as e:
         exception(e)
         ret_str = "ERRORE: " + str(e)
