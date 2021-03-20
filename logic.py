@@ -91,10 +91,10 @@ def get_trex_info():
 
 
 def get_balance_info(crypto, wallet_ids):
-    res_conv = make_request("https://api.alternative.me/v2/ticker/" + crypto + "/?convert=EUR&structure=array")
+    res_conv = make_request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=EUR&slug=" + crypto)
     balance = {
         'walletts': {},
-        'conv_eur': loads(res_conv['response'])['data'][0]['quotes']['EUR']['price'],
+        'conv_eur': list(loads(res_conv['response'])['data'].values())[0]['quote']['EUR']['price'],
         'tot_eur_value': 0.00000000,
         'tot_crypto_value': 0.00000000
     }

@@ -1,3 +1,63 @@
-ethereum: float(str(res['response']).split('Balance:')[1].split('</')[2][2:-6]) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])
-ravencoin: float(loads(res['response'])['balance'])
-callisto: float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])
+https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=EUR&slug=
+
+
+"ethereum": {
+			"crypto": "ETH",
+			"algo": "ethash",
+			"api_balance": "https://api.etherscan.io/api?module=account&action=balance&tag=latest&apikey=UHNUNHRQANAT91UU3WISRBIS4BR2THNCHG&address=",
+			"function_balance": "float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])",
+			"pow_divisor": 18,
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
+		},
+"ravencoin": {
+			"crypto": "RVN",
+			"algo": "kawpow",
+			"api_balance": "https://ravencoin.network/api/addr/",
+			"function_balance": "float(loads(res['response'])['balance'])",
+			"pow_divisor": 8,
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
+		},
+"callisto": {
+			"crypto": "CLO",
+			"algo": "ethash",
+			"api_balance": "https://explorer.callisto.network/api/?module=account&action=balance&address=",
+			"function_balance": "float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])",
+			"pow_divisor": 18,
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
+		},
+"basic-attention-token": {
+			"crypto": "BAT",
+			"algo": "",
+			"api_balance": "https://api.etherscan.io/api?module=account&action=tokenbalance&tag=latest&apikey=UHNUNHRQANAT91UU3WISRBIS4BR2THNCHG&contractaddress=0x0d8775f648430679a709e98d2b0cb6250d2887ef&address=",
+			"function_balance": "float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])",
+			"pow_divisor": 18,
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
+		},
+"ampleforth": {
+			"crypto": "AMPL",
+			"algo": "",
+			"api_balance": "https://api.etherscan.io/api?module=account&action=tokenbalance&tag=latest&apikey=UHNUNHRQANAT91UU3WISRBIS4BR2THNCHG&contractaddress=0xd46ba6d942050d489dbd938a2c909a5d5039a161&address=",
+			"function_balance": "float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])",
+			"pow_divisor": 9,
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
+		},
+"zilliqa": {
+			"crypto": "ZIL",
+			"algo": "",
+			"api_balance": "https://api.etherscan.io/api?module=account&action=tokenbalance&tag=latest&apikey=UHNUNHRQANAT91UU3WISRBIS4BR2THNCHG&contractaddress=0x05f4a42e251f2d52b8ed15e9fedaacfcef1fad27&address=",
+			"function_balance": "float(loads(res['response'])['result']) / pow(10, Config.settings['cryptos'][crypto]['pow_divisor'])",
+			"pow_divisor": 18,
+			"wallets": {
+				"nome del wallet": "id del wallet"
+			}
+		}
