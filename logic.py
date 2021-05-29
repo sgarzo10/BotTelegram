@@ -80,7 +80,7 @@ def get_trex_info():
                 'reported_hashrate': str(round(gpu['hashrate'] / 1000000, 1)) + " MH/s",
                 'gpu_name': gpu['vendor'] + " " + gpu['name'],
                 'gpu_efficency': 'N/A',
-                'accepted_count': str(trex['stat_by_gpu'][i]['accepted_count']),
+                'accepted_count': str(gpu['shares']['accepted_count']),
                 'uuid': gpu['uuid']
             }
             if 'efficiency' in gpu:
