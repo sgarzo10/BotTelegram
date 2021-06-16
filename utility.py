@@ -38,11 +38,13 @@ def make_cmd(cmd, sys=False):
     return response
 
 
-def make_request(url):
+def make_request(url, api_binance=False):
     info("MAKE REQUEST: %s", url)
     header = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36'
     }
+    if api_binance:
+        header['X-MBX-APIKEY'] = Config.settings['binance']['binance_info']['key']
     to_return = {}
     try:
         to_return['response'] = urlopen(Request(url, headers=header)).read()

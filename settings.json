@@ -57,5 +57,25 @@
 	"access_point": {
 		"ip": "ip per l'access point",
 		"interface_name": "nome dell'interfaccia di rete per AP"
+	},
+	"binance": {
+		"orders": {
+			"coppia": [
+				{
+					"amount": "quantita comprata (numero decimale)",
+					"value": "valore di acquisto (numnero decimale)"
+				}
+			]
+		},
+		"binance_info": {
+			"key": "chiave API binance",
+			"secret": "secret API binance"
+		},
+		"symbols": {
+			"coppia": "nome coinmarketcap della crypto"
+		},
+		"mining": {
+			"coppia": "quantita minata (numnero decimale)"
+		}
 	}
 }
