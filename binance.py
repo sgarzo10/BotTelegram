@@ -4,7 +4,7 @@ from json import loads
 from hmac import new
 from hashlib import sha256
 from tabulate import tabulate
-import csv
+from csv import writer
 
 
 def generate_signature(query_string):
@@ -28,7 +28,7 @@ def get_locked_savings_balance(asset, project_id):
 
 
 def get_open_orders():
-    f = open("order-wallet.txt", "w")
+    f = open("binance/order-wallet.txt", "w")
     f.write("")
     f.close()
     query_string = "timestamp=" + str(get_server_time())
@@ -37,7 +37,7 @@ def get_open_orders():
     order_list = []
     for order in orders:
         order_list.append([order['side'], order['symbol'], order['price'], order['origQty'], str(float(order['price']) * float(order['origQty']))])
-    f = open("order-wallet.txt", "a")
+    f = open("binance/order-wallet.txt", "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
 
@@ -94,7 +94,7 @@ def get_order_history():
                 'medium': 0,
                 'qty_total': 0
             }
-    f = open("order-wallet.txt", "a")
+    f = open("binance/order-wallet.txt", "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
     return buy_sell_orders
@@ -144,7 +144,7 @@ def get_wallet(buy_sell_orders):
         final_margin = actual_margin + total_margin + ((mining_budget - sell_mining) * actual_value)
         total_total_margin += final_margin
         assets_list.append([key.replace("BUSD", ""), mining_budget, buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['buy']['medium'], actual_value, ath, total_invest, buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['sell']['medium'], total_return, total_margin, actual_budget, sell_now, actual_margin, final_margin])
-    f = open("order-wallet.txt", "a")
+    f = open("binance/order-wallet.txt", "a")
     f.write(tabulate(assets_list, headers=['ASSET', 'MINED', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT SELL', 'AVG SELL', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL MARGIN: " + str(total_total_margin))
     f.close()
     assets_list_tg = []
@@ -153,7 +153,6 @@ def get_wallet(buy_sell_orders):
             assets_list_tg.append([asset[0], asset[3], asset[4], asset[11], asset[13]])
     to_ret = tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'MARGIN'], tablefmt='orgtbl', floatfmt=".6f")
     assets_list.insert(0, ["ASSET", "MINED", 'TOT BUY', 'AVG BUY', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT SELL', 'AVG SELL', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN'])
-    with open('assets.csv', 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerows(assets_list)
+    with open('binance/assets.csv', 'w', newline='') as file:
+        writer(file).writerows(assets_list)
     return to_ret

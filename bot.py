@@ -27,7 +27,7 @@ def get_binance_status(update, context):
     get_open_orders()
     buy_sell_orders = get_order_history()
     update.message.reply_text(get_wallet(buy_sell_orders))
-    update.message.reply_document(open('order-wallet.txt', 'r'))
+    update.message.reply_document(open('binance/order-wallet.txt', 'r'))
 
 
 def get_balance_status(update, context):
