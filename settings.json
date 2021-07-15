@@ -77,5 +77,14 @@
 		"mining": {
 			"coppia": "quantita minata (numnero decimale)"
 		}
-	}
+	},
+	"chromepath": "path del file chrome.exe",
+	"defi": [
+		{
+			"url": "url della platform",
+			"asset": "asset da mettere in stake",
+			"apy": "espressione epr il recupero dell APY",
+			"value": "espressione epr il recupero del valore del token"
+		}
+	]
 }

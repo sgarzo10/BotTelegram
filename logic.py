@@ -1,8 +1,40 @@
 from utility import make_cmd, make_request, Config
 from json import loads
-from time import sleep
 from meross_iot.api import MerossHttpClient
 from logging import exception
+from selenium import webdriver
+from time import sleep
+from tabulate import tabulate
+
+
+def be_get_apy_defi():
+    options = webdriver.ChromeOptions()
+    options.binary_location = Config.settings['chromepath']
+    options.headless = True
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--no-sandbox")
+    options.add_experimental_option('useAutomationExtension', False)
+    browsers = []
+    asset_list = []
+    try:
+        i = 0
+        for plt in Config.settings['defi']:
+            browsers.append(webdriver.Chrome(options=options))
+            browsers[i].get(plt['url'])
+            i += 1
+        sleep(10)
+        i = 0
+        for plt in Config.settings['defi']:
+            asset_list.append([plt['url'], plt['asset'], eval(plt['apy']), eval(plt['value'])])
+            i += 1
+        to_ret = tabulate(asset_list, headers=['PLATFORM', 'ASSET', 'APY', 'VALUE'], tablefmt='orgtbl', floatfmt=".3f")
+    except Exception as e:
+        exception(e)
+        to_ret = str(e)
+    finally:
+        for b in browsers:
+            b.quit()
+    return to_ret
 
 
 def get_nvidia_info():
