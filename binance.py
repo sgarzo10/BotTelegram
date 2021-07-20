@@ -108,8 +108,8 @@ def get_wallet(buy_sell_orders):
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=" + coin + "&slug="
     for key in buy_sell_orders.keys():
         mining_budget = 0
-        if key in Config.settings['mining']:
-            mining_budget = Config.settings['mining'][key]
+        if key in Config.settings['binance']['mining']:
+            mining_budget = Config.settings['binance']['mining'][key]
         actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell'][
             'qty_total']
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
