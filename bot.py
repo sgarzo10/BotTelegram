@@ -2,7 +2,7 @@ from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info, be_get_apy_defi
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info, be_get_apy_defi, be_get_link
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
@@ -256,6 +256,12 @@ def set_gpu_speed_fan(update, context):
     update.message.reply_text(ret_str)
 
 
+def get_link(update, context):
+    initial_log("get_link", context.args)
+    if len(context.args) == 2:
+        update.message.reply_text(be_get_link(context.args[0], context.args[1]))
+
+
 def my_add_handler(struct_commands, disp, cmd_filter):
     ret_str = ""
     for key, value in struct_commands.items():
@@ -297,6 +303,9 @@ def main():
             "get_binance_status": "Riepilogo Binance",
             "shutdown_system": "Arresta il sistema",
             "get_public_ip": "Restituisce IP pubblico del server"
+        },
+        "football": {
+            "get_link": "Recupera link per partite"
         }
     }
     cmd_str = ""

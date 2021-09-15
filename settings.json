@@ -4,7 +4,8 @@
 		"mining": "true o false (boolean)",
 		"vpn": "true o false (boolean)",
 		"ap": "true o false (boolean)",
-		"cross": "true o false (boolean)"
+		"cross": "true o false (boolean)",
+		"football": "true o false (boolean)"
 	},
 	"bot_telegram": {
 		"token": "token rilasciato da BotFather",
@@ -86,5 +87,14 @@
 			"apy": "espressione epr il recupero dell APY",
 			"value": "espressione epr il recupero del valore del token"
 		}
-	]
+	],
+	"football": {
+		"tor_bin_path": "path dell'exe di tor",
+		"ace_base_url": "url di base di acestream IP 192.168",
+		"base_url": "pagina da cui recuperare i link",
+		"proxy": "proxy per tor",
+		"campionati": {
+			"sigla": "integer"
+		}
+	}
 }
