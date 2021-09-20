@@ -17,25 +17,40 @@ def be_get_apy_defi():
     options.add_argument("--no-sandbox")
     options.add_experimental_option('useAutomationExtension', False)
     browsers = []
-    asset_list = []
+    token_list = []
     try:
         i = 0
-        for plt in Config.settings['defi']:
+        for plt in Config.settings['platform_defi']:
             browsers.append(webdriver.Chrome(options=options))
             browsers[i].get(plt['url'])
             i += 1
         sleep(10)
         i = 0
-        for plt in Config.settings['defi']:
-            asset_list.append([plt['url'], plt['asset'], eval(plt['apy']), eval(plt['value'])])
+        for plt in Config.settings['platform_defi']:
+            token_list.append([plt['url'], eval(plt['apy'])])
             i += 1
-        to_ret = tabulate(asset_list, headers=['PLATFORM', 'ASSET', 'APY', 'VALUE'], tablefmt='orgtbl', floatfmt=".3f")
+        to_ret = tabulate(token_list, headers=['PLATFORM', 'APY'], tablefmt='orgtbl', floatfmt=".3f")
     except Exception as e:
         exception(e)
         to_ret = str(e)
     finally:
         for b in browsers:
             b.quit()
+    return to_ret
+
+
+def be_get_token_defi_value():
+    to_ret = ""
+    for tk in Config.settings['token_defi']:
+        to_ret += "*" + tk['token'] + ":* "
+        if tk['chain'] != "SOL":
+            to_ret += str(round(loads(
+                make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'] + "/price?network=" + tk['chain'])[
+                    'response'])[Config.settings["chain_defi"][tk['chain']]['key']], 5)) + "$\n"
+        else:
+            to_ret += str(round(
+                loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data'][
+                    Config.settings["chain_defi"][tk['chain']]['key']], 5)) + "$\n"
     return to_ret
 
 

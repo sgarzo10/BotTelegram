@@ -80,12 +80,23 @@
 		}
 	},
 	"chromepath": "path del file chrome.exe",
-	"defi": [
+	"chain_defi": {
+		"nome_chain": {
+			"url": "url api dex per recupero valore token",
+			"key": "chiave del valore in dollari"
+		}
+	},
+	"token_defi": [
+		{
+			"token": "asset da mettere in stake o che si farma",
+			"chain": "blockchain del token",
+			"addr": "indirizzo del token"
+		}
+	],
+	"platform_defi": [
 		{
 			"url": "url della platform",
-			"asset": "asset da mettere in stake",
-			"apy": "espressione epr il recupero dell APY",
-			"value": "espressione epr il recupero del valore del token"
+			"apy": "espressione per il recupero dell APY"
 		}
 	],
 	"football": {
