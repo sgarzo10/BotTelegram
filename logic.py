@@ -1,30 +1,19 @@
-from utility import make_cmd, make_request, Config
+from utility import make_cmd, make_request, Config, make_driver_selenium
 from json import loads
 from meross_iot.api import MerossHttpClient
 from logging import exception
-from selenium import webdriver
 from time import sleep
 from tabulate import tabulate
-from selenium.webdriver import ChromeOptions, Chrome
 from os import popen
 
 
 def be_get_apy_defi():
-    options = webdriver.ChromeOptions()
-    options.binary_location = Config.settings['chromepath']
-    options.headless = True
-    options.add_argument("--disable-software-rasterizer")
-    options.add_argument("--no-sandbox")
-    options.add_experimental_option('useAutomationExtension', False)
-    browsers = []
+    drivers = []
     token_list = []
     try:
-        i = 0
         for plt in Config.settings['platform_defi']:
-            browsers.append(webdriver.Chrome(options=options))
-            browsers[i].get(plt['url'])
-            i += 1
-        sleep(10)
+            drivers.append(make_driver_selenium(plt['url'], driver_or_page=False))
+        sleep(7)
         i = 0
         for plt in Config.settings['platform_defi']:
             token_list.append([plt['url'], eval(plt['apy'])])
@@ -34,8 +23,8 @@ def be_get_apy_defi():
         exception(e)
         to_ret = str(e)
     finally:
-        for b in browsers:
-            b.quit()
+        for d in drivers:
+            d.quit()
     return to_ret
 
 
@@ -474,63 +463,53 @@ def be_get_access_point_status():
     return to_ret
 
 
-def be_get_link(competizione, team):
-    to_ret = ""
+def be_get_link_acestream(event_link):
+    event_link = Config.settings['football']['base_url'] + "/enx/eventinfo/" + event_link
+    to_ret = "EVENTO: " + event_link + "\n"
     try:
         tor_bin_path = Config.settings['football']['tor_bin_path']
         ace_base_url = Config.settings['football']['ace_base_url']
-        base_url = Config.settings['football']['base_url']
-        proxy = Config.settings['football']['proxy']
-        campionati = Config.settings['football']['campionati']
-        found = False
         ace_on = False
         links = []
         popen(tor_bin_path)
-        options = ChromeOptions()
-        options.binary_location = Config.settings['chromepath']
-        options.headless = True
-        options.add_argument("--disable-software-rasterizer")
-        options.add_argument("--no-sandbox")
-        options.add_argument('--proxy-server=%s' % proxy)
-        options.add_experimental_option('useAutomationExtension', False)
-        driver = Chrome(options=options)
-        driver.get(base_url + "/enx/calendar/" + campionati[competizione] + "/")
-        html_source = driver.page_source
-        main_events = html_source.split("<a class=\"main\" href=\"")
-        for event in main_events[1:]:
-            link_event = event.split("\"><b>")[0]
-            if link_event.find(team) != -1:
-                found = True
-                to_ret = "EVENTO: " + base_url + link_event + "\n"
-                driver.get(base_url + link_event)
-                html_source = driver.page_source
-                if html_source.find("AceStream Links") != -1:
-                    percentages = html_source.split("AceStream Links")[1].split("<span class=\"pc\">%</span>")
-                    for percentage in percentages[:-1]:
-                        links.append({'perc': percentage[-2:]})
-                    i = 0
-                    contents_id = html_source.split("onclick=\"show_webplayer('acestream', '")
-                    for content_id in contents_id[1:]:
-                        links[i]['id'] = content_id.split("',")[0]
-                        i += 1
-                else:
-                    to_ret += "LINK DI ACESTREAM NON ANCORA DISPONIBILI\n"
-                break
-        if not found:
-            to_ret += "EVENTO NON TROVATO"
+        html_source = make_driver_selenium(event_link, True)
+        if html_source.find("AceStream Links") != -1:
+            percentages = html_source.split("AceStream Links")[1].split("<span class=\"pc\">%</span>")
+            for percentage in percentages[:-1]:
+                links.append({'perc': percentage[-2:]})
+            i = 0
+            contents_id = html_source.split("onclick=\"show_webplayer('acestream', '")
+            for content_id in contents_id[1:]:
+                links[i]['id'] = content_id.split("',")[0]
+                i += 1
         else:
-            response = make_request(ace_base_url + "webui/api/service?method=get_version&format=jsonp&callback=mycallback")
-            if response['state']:
-                ace_on = True
-                to_ret += "SERVER ACESTREAM RAGGIUNGIBILE\n"
-            else:
-                to_ret += "SERVER ACESTREAM NON RAGGIUNGIBILE\n"
-            for link in links:
-                to_ret += "---------------------------------------------\n"
-                to_ret += link['id'] + " - " + link['perc'] + "\n"
-                if ace_on:
-                    to_ret += ace_base_url + "ace/manifest.m3u8?id=" + link['id'] + "\n"
-        driver.quit()
+            to_ret += "LINK DI ACESTREAM NON ANCORA DISPONIBILI\n"
+        response = make_request(ace_base_url + "webui/api/service?method=get_version&format=jsonp&callback=mycallback")
+        if response['state']:
+            ace_on = True
+            to_ret += "SERVER ACESTREAM RAGGIUNGIBILE\n"
+        else:
+            to_ret += "SERVER ACESTREAM NON RAGGIUNGIBILE\n"
+        for link in links:
+            to_ret += "---------------------------------------------\n"
+            to_ret += link['id'] + " - " + link['perc'] + "\n"
+            if ace_on:
+                to_ret += ace_base_url + "ace/manifest.m3u8?id=" + link['id'] + "\n"
     except Exception as e:
+        exception(e)
         to_ret = str(e)
     return to_ret
+
+
+def be_get_link_event(competizione):
+    event_list = []
+    try:
+        tor_bin_path = Config.settings['football']['tor_bin_path']
+        popen(tor_bin_path)
+        html_source = make_driver_selenium(Config.settings['football']['base_url'] + "/enx/calendar/" + competizione + "/", True)
+        main_events = html_source.split("<a class=\"main\" href=\"")
+        for event in main_events[1:]:
+            event_list.append((event.split("</b>")[0].split("<b>")[1], event.split("\"><b>")[0].replace("/enx/eventinfo/", "")))
+    except Exception as e:
+        exception(e)
+    return event_list

@@ -1,8 +1,7 @@
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from logging import basicConfig, INFO, exception
-from utility import make_cmd, markdown_text, Config, get_separator, initial_log
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info, be_get_apy_defi, be_get_link, be_get_token_defi_value
+from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
@@ -195,20 +194,12 @@ def start_miner(update, context):
 def set_trex_profile(update, context):
     if context.args is not None:
         initial_log("set_trex_profile", context.args)
-        trex_profile_list = list(Config.settings['trex']['profiles'].keys())
-        button_list = []
-        for i in range(0, len(trex_profile_list), 2):
-            profiles = trex_profile_list[i:i + 2]
-            row = []
-            for profile in profiles:
-                row.append(InlineKeyboardButton(profile, callback_data="set_trex_profile " + profile))
-            button_list.append(row)
-        update.message.reply_text("SCEGLI UN PROFILO", reply_markup=InlineKeyboardMarkup(button_list))
+        update.message.reply_text("SCEGLI UN PROFILO", reply_markup=make_button_list(list(Config.settings['trex']['profiles'].keys()), "set_trex_profile "))
     else:
         callback_data = update.callback_query.data
         initial_log("set_trex_profile", callback_data.split(" ")[1:])
-        ret_str = be_set_trex_profile(callback_data.replace("set_trex_profile ", ""))
         update.callback_query.answer()
+        ret_str = be_set_trex_profile(callback_data.replace("set_trex_profile ", ""))
         update.callback_query.message.edit_text(text=ret_str)
 
 
@@ -262,9 +253,17 @@ def set_gpu_speed_fan(update, context):
 
 
 def get_link(update, context):
-    initial_log("get_link", context.args)
-    if len(context.args) == 2:
-        update.message.reply_text(be_get_link(context.args[0], context.args[1]))
+    if context.args is not None:
+        initial_log("get_link", context.args)
+        update.message.reply_text("SCEGLI UNA COMPETIZIONE", reply_markup=make_button_list(list(Config.settings['football']['competizioni'].keys()), "get_link "))
+    else:
+        callback_data = update.callback_query.data
+        initial_log("get_link", callback_data.split(" ")[1:])
+        update.callback_query.answer()
+        if callback_data.split(" ")[1].find("EVLI") == -1:
+            update.callback_query.message.edit_text("SCEGLI UNA PARTITA", reply_markup=make_button_list(be_get_link_event(Config.settings['football']['competizioni'][callback_data.replace("get_link ", "")]), "get_link "))
+        else:
+            update.callback_query.message.edit_text(be_get_link_acestream(callback_data.split(" ")[1].replace("EVLI", "")))
 
 
 def my_add_handler(struct_commands, disp, cmd_filter):
@@ -316,9 +315,10 @@ def main():
     }
     cmd_str = ""
     for key, value in Config.settings['function'].items():
-        if value is True:
-            cmd_str += my_add_handler(commands[key], upd.dispatcher, Filters.user(username=set(Config.settings['users_abil'])))
+        if value['active']:
+            cmd_str += my_add_handler(commands[key], upd.dispatcher, Filters.user(username=set(value['users_abil'])))
     upd.dispatcher.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
+    upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)

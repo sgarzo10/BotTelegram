@@ -3,6 +3,8 @@ from os import system
 from urllib.request import urlopen, Request
 from logging import info, exception
 from json import load
+from selenium.webdriver import ChromeOptions, Chrome
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def make_cmd(cmd, sys=False):
@@ -74,6 +76,41 @@ def initial_log(function_name, param_list):
     info("REQUEST: %s - PARAMETERS NUMBER: %s", function_name, len(param_list))
     for par in param_list:
         info("PARAMETER: %s", par)
+
+
+def make_driver_selenium(url, proxy=False, driver_or_page=True):
+    options = ChromeOptions()
+    options.binary_location = Config.settings['chromepath']
+    options.headless = True
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--no-sandbox")
+    if proxy:
+        options.add_argument('--proxy-server=%s' % Config.settings['football']['proxy'])
+    options.add_experimental_option('useAutomationExtension', False)
+    driver = Chrome(options=options)
+    driver.get(url)
+    if driver_or_page:
+        html_source = driver.page_source
+        driver.quit()
+        to_ret = html_source
+    else:
+        to_ret = driver
+    return to_ret
+
+
+def make_button_list(string_list, string_callback):
+    button_list = []
+    row_size = 2
+    for i in range(0, len(string_list), row_size):
+        profiles = string_list[i:i + row_size]
+        row = []
+        for profile in profiles:
+            if type(profile) is tuple:
+                row.append(InlineKeyboardButton(profile[0], callback_data=string_callback + "EVLI" + profile[1]))
+            else:
+                row.append(InlineKeyboardButton(profile, callback_data=string_callback + profile))
+        button_list.append(row)
+    return InlineKeyboardMarkup(button_list)
 
 
 class Config:

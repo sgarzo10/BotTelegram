@@ -1,11 +1,26 @@
 {
 	"users_abil": ["username abilitati ad utilizzare il bot (lista di stringhe)"],
 	"function": {
-		"mining": "true o false (boolean)",
-		"vpn": "true o false (boolean)",
-		"ap": "true o false (boolean)",
-		"cross": "true o false (boolean)",
-		"football": "true o false (boolean)"
+		"mining": {
+			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
+			"active": "true o false (boolean)"
+		},
+		"vpn": {
+			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
+			"active": "true o false (boolean)"
+		},
+		"ap": {
+			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
+			"active": "true o false (boolean)"
+		},
+		"cross": {
+			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
+			"active": "true o false (boolean)"
+		},
+		"football": {
+			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
+			"active": "true o false (boolean)"
+		}
 	},
 	"bot_telegram": {
 		"token": "token rilasciato da BotFather",
@@ -104,8 +119,8 @@
 		"ace_base_url": "url di base di acestream IP 192.168",
 		"base_url": "pagina da cui recuperare i link",
 		"proxy": "proxy per tor",
-		"campionati": {
-			"sigla": "integer"
+		"competizioni": {
+			"nome": "integer"
 		}
 	}
 }
