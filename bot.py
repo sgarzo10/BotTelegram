@@ -24,12 +24,12 @@ def get_file_ovpn(update, context):
 
 def get_apy_defi(update, context):
     initial_log("get_apy_defi", context.args)
-    update.message.reply_text(be_get_token_defi_value())
+    update.message.reply_text(be_get_apy_defi())
 
 
 def get_value_token_defi(update, context):
     initial_log("get_value_token_defi", context.args)
-    update.message.reply_text(be_get_apy_defi())
+    update.message.reply_text(markdown_text(be_get_token_defi_value()), parse_mode='MarkdownV2')
 
 
 def get_binance_status(update, context):
