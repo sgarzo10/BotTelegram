@@ -78,6 +78,7 @@
 		"orders": {
 			"coppia": [
 				{
+					"type": "tipo di operazione (BUY, SELL)"
 					"amount": "quantita comprata (numero decimale)",
 					"value": "valore di acquisto (numnero decimale)"
 				}
@@ -88,7 +89,7 @@
 			"secret": "secret API binance"
 		},
 		"symbols": {
-			"coppia": "nome coinmarketcap della crypto"
+			"coppia": "nome coinmarketcap della crypto o address-chain"
 		},
 		"mining": {
 			"coppia": "quantita minata (numnero decimale)"

@@ -1,5 +1,4 @@
 from utility import Config, make_request
-from logging import info
 from json import loads
 from hmac import new
 from hashlib import sha256
@@ -46,7 +45,6 @@ def get_order_history():
     order_list = []
     buy_sell_orders = {}
     for key in Config.settings['binance']['symbols'].keys():
-        info(key)
         params = "timestamp=" + str(get_server_time()) + "&symbol=" + key
         resp = make_request("https://api.binance.com/api/v3/myTrades?" + params + "&signature=" + generate_signature(params), api_binance=True)
         orders = {}
@@ -58,11 +56,12 @@ def get_order_history():
         qty_total_sell = 0
         if key in Config.settings['binance']["orders"]:
             for order in Config.settings['binance']["orders"][key]:
-                qty_total += order['amount']
-                if "crypto" in order:
-                    medium += order['amount'] * buy_sell_orders[order["crypto"] + "BUSD"]['buy']['medium']
-                else:
+                if order['type'] == 'BUY':
+                    qty_total += order['amount']
                     medium += order['amount'] * order['value']
+                else:
+                    qty_total_sell += order['amount']
+                    medium_sell += order['amount'] * order['value']
         for order in orders:
             type_order = "SELL"
             if order['isBuyer']:
@@ -110,26 +109,31 @@ def get_wallet(buy_sell_orders):
         mining_budget = 0
         if key in Config.settings['binance']['mining']:
             mining_budget = Config.settings['binance']['mining'][key]
-        actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell'][
-            'qty_total']
+        actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell']['qty_total']
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
-        if key.find("ADA") == 0:
-            actual_budget -= 30.5
         if buy_sell_orders[key]['buy']['medium'] > 0 and actual_budget > 0:
             all_invest += total_invest - total_return
-        url += Config.settings['binance']["symbols"][key] + ","
+        if Config.settings['binance']["symbols"][key][:2] != '0x':
+            url += Config.settings['binance']["symbols"][key] + ","
     url = url[:-1]
     res_conv = list(loads(make_request(url)['response'])['data'].values())
     for key in buy_sell_orders.keys():
         cry = {}
+        found = False
         for cry in res_conv:
             if cry['slug'] == Config.settings['binance']["symbols"][key]:
+                found = True
                 break
-        info(key)
-        res = str(make_request("https://coinmarketcap.com/currencies/" + cry['slug'])['response'])
-        ath = res.split("<div>All Time High</div>")[1].split("<span>")[1].split("</span>")[0][1:]
-        actual_value = cry['quote'][coin]['price']
+        if found:
+            res = str(make_request("https://coinmarketcap.com/currencies/" + cry['slug'])['response'])
+            ath = res.split("<div>All Time High</div>")[1].split("<span>")[1].split("</span>")[0][1:]
+            actual_value = cry['quote'][coin]['price']
+        else:
+            addr = Config.settings['binance']["symbols"][key].split("-")[0]
+            chain = Config.settings['binance']["symbols"][key].split("-")[1]
+            actual_value = round(loads(make_request(Config.settings["chain_defi"][chain]['url'] + addr + "/price?network=" + chain)['response'])[Config.settings["chain_defi"][chain]['key']], 5)
+            ath = 0.10
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
         mining_budget = 0
@@ -146,16 +150,18 @@ def get_wallet(buy_sell_orders):
             else:
                 total_margin = total_return - (buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['buy']['medium'])
         actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell']['qty_total']
-        if key.find("ADA") == 0:
-            actual_budget -= 30.5
         sell_now = actual_budget * actual_value
         if actual_budget > 0:
-            perc_wall = ((total_invest - total_return) * 100) / all_invest
+            if buy_sell_orders[key]['buy']['medium'] > 0:
+                perc_wall = ((total_invest - total_return) * 100) / all_invest
             if sell_mining > 0:
                 actual_margin = sell_now
             else:
                 actual_margin = (sell_now - (mining_budget * actual_value)) - ((actual_budget - mining_budget) * buy_sell_orders[key]['buy']['medium'])
-        final_margin = actual_margin + total_margin + ((mining_budget - sell_mining) * actual_value)
+        if sell_mining > 0:
+            final_margin = actual_margin + total_margin
+        else:
+            final_margin = actual_margin + total_margin + ((mining_budget - sell_mining) * actual_value)
         total_total_margin += final_margin
         assets_list.append([key.replace("BUSD", ""), mining_budget, perc_wall, buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['buy']['medium'], actual_value, ath, total_invest, buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['sell']['medium'], total_return, total_margin, actual_budget, sell_now, actual_margin, final_margin])
     f = open("binance/order-wallet.txt", "a")
