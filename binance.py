@@ -137,19 +137,22 @@ def get_wallet(buy_sell_orders):
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
         mining_budget = 0
+        fee = 0
         total_margin = 0
         actual_margin = 0
         sell_mining = 0
         perc_wall = 0
         if key in Config.settings['binance']['mining']:
             mining_budget = Config.settings['binance']['mining'][key]
+        if key in Config.settings['binance']['fee']:
+            fee = Config.settings['binance']['fee'][key]
         if buy_sell_orders[key]['sell']['qty_total'] > 0:
             if buy_sell_orders[key]['sell']['qty_total'] > buy_sell_orders[key]['buy']['qty_total']:
                 total_margin = total_return - total_invest
                 sell_mining = buy_sell_orders[key]['sell']['qty_total'] - buy_sell_orders[key]['buy']['qty_total']
             else:
                 total_margin = total_return - (buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['buy']['medium'])
-        actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell']['qty_total']
+        actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell']['qty_total'] - fee
         sell_now = actual_budget * actual_value
         if actual_budget > 0:
             if buy_sell_orders[key]['buy']['medium'] > 0:

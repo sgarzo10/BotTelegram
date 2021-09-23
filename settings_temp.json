@@ -78,9 +78,9 @@
 		"orders": {
 			"coppia": [
 				{
-					"type": "tipo di operazione (BUY, SELL)"
+					"type": "tipo di operazione (BUY, SELL)",
 					"amount": "quantita comprata (numero decimale)",
-					"value": "valore di acquisto (numnero decimale)"
+					"value": "valore di acquisto (numero decimale)"
 				}
 			]
 		},
@@ -92,7 +92,10 @@
 			"coppia": "nome coinmarketcap della crypto o address-chain"
 		},
 		"mining": {
-			"coppia": "quantita minata (numnero decimale)"
+			"coppia": "quantita minata (numero decimale)"
+		},
+		"fee": {
+			"coppia": "quantita spesa (numero decimale)"
 		}
 	},
 	"chromepath": "path del file chrome.exe",
