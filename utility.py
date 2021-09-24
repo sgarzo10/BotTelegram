@@ -73,9 +73,12 @@ def get_separator(title=None):
 
 
 def initial_log(function_name, param_list):
-    info("REQUEST: %s - PARAMETERS NUMBER: %s", function_name, len(param_list))
-    for par in param_list:
-        info("PARAMETER: %s", par)
+    if type(param_list) is list:
+        info("REQUEST: %s - PARAMETERS NUMBER: %s", function_name, len(param_list))
+        for par in param_list:
+            info("PARAMETER: %s", par)
+    else:
+        info("REQUEST: %s - PARAMETER: %s", function_name, param_list)
 
 
 def make_driver_selenium(url, proxy=False, driver_or_page=True):
@@ -108,7 +111,7 @@ def make_button_list(string_list, string_callback):
             if type(profile) is tuple:
                 row.append(InlineKeyboardButton(profile[0], callback_data=string_callback + "EVLI" + profile[1]))
             else:
-                row.append(InlineKeyboardButton(profile, callback_data=string_callback + profile))
+                row.append(InlineKeyboardButton(str(profile), callback_data=string_callback + str(profile)))
         button_list.append(row)
     return InlineKeyboardMarkup(button_list)
 

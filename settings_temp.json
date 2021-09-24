@@ -1,6 +1,9 @@
 {
-	"users_abil": ["username abilitati ad utilizzare il bot (lista di stringhe)"],
 	"function": {
+		"crypto": {
+			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
+			"active": "true o false (boolean)"
+		},
 		"mining": {
 			"users_abil": ["username abilitati ad utilizzare queste funzioni del bot (lista di stringhe)"],
 			"active": "true o false (boolean)"
@@ -36,7 +39,7 @@
 		"gpus": {
 			"nome della gpu": {
 				"config_file": "nome file cfg per msi afterburner",
-				"min_fan_speed": "velocita minima gpu (numero intero)"
+				"fan_speeds": "possibili velocita della ventola gpu (lista di interi)"
 			}
 		}
 	},

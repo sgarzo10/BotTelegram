@@ -1,10 +1,133 @@
-from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler
+from telegram import ReplyKeyboardMarkup
+from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, get_balance_info, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
+
+commands = {
+    "crypto": {
+        "icon": 'Crypto 💰',
+        "row_size": 3,
+        "desc": "Funzioni crypto",
+        "commands": {
+            "get_binance_status": {
+                "icon": "Balance 💰",
+                "desc": "Riepilogo Binance"
+            },
+            "get_value_token_defi": {
+                "icon": "Token DeFi 💰",
+                "desc": "Recupera il valore dei token DeFi",
+            },
+            "get_apy_defi": {
+                "icon": "APY DeFi 💰",
+                "desc": "Recupera APY DeFi"
+            }
+        }
+    },
+    "mining": {
+        "icon": 'Mining ⛏',
+        "row_size": 3,
+        "desc": "Funzioni mining",
+        "commands": {
+            # "get_balance_status": "Restituisce il bilancio di tutte le crypto",
+            "get_mining_status": {
+                "icon": "Status ⛏",
+                "desc": "Restituisce lo stato del miner"
+            },
+            "start_miner": {
+                "icon": "Start ⛏",
+                "desc": "Avvia il miner"
+            },
+            "stop_miner": {
+                "icon": "Stop ⛏",
+                "desc": "Arresta il miner"
+            },
+            "set_gpu_speed_fan": {
+                "icon": "Set Fan ⛏",
+                "desc": "Setta la velocità della ventola della GPU"
+            },
+            "get_trex_profiles": {
+                "icon": "Get Profiles ⛏",
+                "desc": "Restituisce la lista dei profili t-rex"
+            },
+            "set_trex_profile": {
+                "icon": "Set Profiles ⛏",
+                "desc": "Imposta il profilo per t-rex"
+            }
+        }
+    },
+    "vpn": {
+        "icon": "VPN 🔐",
+        "desc": "Funzioni VPN",
+        "row_size": 2,
+        "commands": {
+            "get_status_server_vpn": {
+                "icon": "Status 🔐",
+                "desc": "Restituisce lo stato del server VPN"
+            },
+            "get_file_ovpn": {
+                "icon": "Client File 🔐",
+                "desc": "Restituisce il file per il client Open VPN"
+            },
+            "start_server_vpn": {
+                "icon": "Start 🔐",
+                "desc": "Avvia il server VPN"
+            },
+            "stop_server_vpn": {
+                "icon": "Stop 🔐",
+                "desc": "Arreta il server VPN"
+            }
+        }
+    },
+    "ap": {
+        "icon": "Access Point 📡",
+        "row_size": 3,
+        "desc": "Funzioni AP",
+        "commands": {
+            "get_access_point_status": {
+                "icon": "Status 📡",
+                "desc": "Restituisce lo stato dell'access point"
+            },
+            "start_access_point": {
+                "icon": "Start 📡",
+                "desc": "Avvia l'access point"
+            },
+            "stop_access_point": {
+                "icon": "Stop 📡",
+                "desc": "Arresta l'access point"
+            }
+        }
+    },
+    "football": {
+        "icon": "Football ⚽",
+        "row_size": 1,
+        "desc": "Funzioni football",
+        "commands": {
+            "get_link": {
+                "icon": "Link ⚽",
+                "desc": "Recupera link per partite"
+            }
+        }
+    },
+    "cross": {
+        "icon": "Cross 🔮",
+        "row_size": 2,
+        "desc": "Funzioni cross",
+        "commands": {
+            "shutdown_system": {
+                "icon": "Shutdown 🔮",
+                "desc": "Arresta il sistema"
+            },
+            "get_public_ip": {
+                "icon": "Public IP 🔮",
+                "desc": "Restituisce IP pubblico del server"
+            }
+        }
+    }
+}
 
 
 def get_public_ip(update, context):
@@ -192,7 +315,7 @@ def start_miner(update, context):
 
 
 def set_trex_profile(update, context):
-    if context.args is not None:
+    if context.args is not None or (update.message is not None and update.message.text[:1] != '/'):
         initial_log("set_trex_profile", context.args)
         update.message.reply_text("SCEGLI UN PROFILO", reply_markup=make_button_list(list(Config.settings['trex']['profiles'].keys()), "set_trex_profile "))
     else:
@@ -233,27 +356,21 @@ def get_access_point_status(update, context):
 
 
 def set_gpu_speed_fan(update, context):
-    initial_log("set_gpu_speed_fan", context.args)
-    gpu_list = Config.settings['afterburner']['gpus'].keys()
-    if len(context.args) == 2:
-        if context.args[0] in gpu_list:
-            try:
-                min_fan_speed = Config.settings['afterburner']['gpus'][context.args[0]]['min_fan_speed']
-                if min_fan_speed <= int(context.args[1]) <= 100:
-                    ret_str = be_set_gpu_speed_fan(context.args[0], context.args[1])
-                else:
-                    ret_str = "LA VELOCITA DEVE AVERE UN VALORE COMPRESO TRA " + str(min_fan_speed) + " E 100"
-            except ValueError:
-                ret_str = "LA VELOCITA DEVE ESSERE UN NUMERO INTERO"
-        else:
-            ret_str = "GPU INESISTENTE\nIL NOME DELLA GPU PUO ESSERE: " + ', '.join(gpu_list)
+    if context.args is not None or (update.message is not None and update.message.text[:1] != '/'):
+        initial_log("set_gpu_speed_fan", context.args)
+        update.message.reply_text("SCEGLI UNA GPU", reply_markup=make_button_list(list(Config.settings['afterburner']['gpus'].keys()), "set_gpu_speed_fan "))
     else:
-        ret_str = "È NECESSARIO SPECIFICARE DUE PARAMETRI: NOME GPU E VELOCITA\nIL NOME DELLA GPU PUO ESSERE: " + ', '.join(gpu_list) + "\nLA VELOCITA DEVE ESSERE UN NUMERO INTERO"
-    update.message.reply_text(ret_str)
+        callback_data = update.callback_query.data
+        initial_log("set_gpu_speed_fan", callback_data.split(" ")[1:])
+        update.callback_query.answer()
+        if len(callback_data.split(" ")) == 2:
+            update.callback_query.message.edit_text("SCEGLI UNA VELOCITA", reply_markup=make_button_list(Config.settings['afterburner']['gpus'][callback_data.replace("set_gpu_speed_fan ", "")]['fan_speeds'], "set_gpu_speed_fan " + callback_data.replace("set_gpu_speed_fan ", "") + " "))
+        else:
+            update.callback_query.message.edit_text(be_set_gpu_speed_fan(callback_data.split(" ")[1], callback_data.split(" ")[2]))
 
 
 def get_link(update, context):
-    if context.args is not None:
+    if context.args is not None or (update.message is not None and update.message.text[:1] != '/'):
         initial_log("get_link", context.args)
         update.message.reply_text("SCEGLI UNA COMPETIZIONE", reply_markup=make_button_list(list(Config.settings['football']['competizioni'].keys()), "get_link "))
     else:
@@ -266,10 +383,49 @@ def get_link(update, context):
             update.callback_query.message.edit_text(be_get_link_acestream(callback_data.split(" ")[1].replace("EVLI", "")))
 
 
+def start(update, context):
+    initial_log("start", context.args)
+    keyboard = []
+    temp_list = []
+    desc = ""
+    for key, value in Config.settings['function'].items():
+        if value['active']:
+            desc += commands[key]['icon'] + ": " + commands[key]['desc'] + "\n"
+            temp_list.append(commands[key]['icon'])
+        if len(temp_list) == 2:
+            keyboard.append(temp_list)
+            temp_list = []
+    if temp_list:
+        keyboard.append(temp_list)
+    update.message.reply_text(desc, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+
+
+def generate_key(update, context):
+    initial_log("generate_key", str(update.message.text))
+    keyboard = []
+    temp_list = []
+    desc = ""
+    for value in commands.values():
+        if value['icon'] == update.message.text:
+            desc += str(update.message.text) + "\n"
+            for value_command in value['commands'].values():
+                desc += value_command['icon'] + ": " + value_command['desc'] + "\n"
+                temp_list.append(value_command['icon'])
+                if len(temp_list) == value['row_size']:
+                    keyboard.append(temp_list)
+                    temp_list = []
+    if temp_list:
+        keyboard.append(temp_list)
+    keyboard.append(['Main Menu 🔙'])
+    update.message.reply_text(desc, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+
+
 def my_add_handler(struct_commands, disp, cmd_filter):
     ret_str = ""
-    for key, value in struct_commands.items():
-        ret_str += key + " - " + value + "\n"
+    disp.add_handler(MessageHandler(Filters.text(struct_commands['icon']) & cmd_filter, generate_key))
+    for key, value in struct_commands['commands'].items():
+        ret_str += key + " - " + value["desc"] + "\n"
+        disp.add_handler(MessageHandler(Filters.text(value['icon']) & cmd_filter, eval(key)))
         disp.add_handler(CommandHandler(key, eval(key), cmd_filter))
     return ret_str
 
@@ -281,43 +437,19 @@ def main():
         level=INFO)
     Config()
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
-    commands = {
-        "mining": {
-            "get_balance_status": "Restituisce il bilancio di tutte le crypto",
-            "get_mining_status": "Restituisce lo stato del miner",
-            "start_miner": "Avvia il miner",
-            "stop_miner": "Arresta il miner",
-            "set_gpu_speed_fan": "Setta la velocità della ventola della GPU",
-            "get_trex_profiles": "Restituisce la lista dei profili t-rex",
-            "set_trex_profile": "Imposta il profilo per t-rex"
-        },
-        "vpn": {
-            "get_status_server_vpn": "Restituisce lo stato del server VPN",
-            "start_server_vpn": "Avvia il server VPN",
-            "stop_server_vpn": "Arreta il server VPN",
-            "get_file_ovpn": "Restituisce il file per il client Open VPN"
-        },
-        "ap": {
-            "start_access_point": "Avvia l'access point",
-            "stop_access_point": "Arresta l'access point",
-            "get_access_point_status": "Restituisce lo stato dell'access point"
-        },
-        "cross": {
-            "get_value_token_defi": "recuopera il valore dei token DeFi",
-            "get_apy_defi": "Recupera APY DeFi",
-            "get_binance_status": "Riepilogo Binance",
-            "shutdown_system": "Arresta il sistema",
-            "get_public_ip": "Restituisce IP pubblico del server"
-        },
-        "football": {
-            "get_link": "Recupera link per partite"
-        }
-    }
-    cmd_str = ""
+    users_list = []
+    for key, value in Config.settings['function'].items():
+        for usr in value['users_abil']:
+            if usr not in users_list:
+                users_list.append(usr)
+    cmd_str = "start - Avvia il bot e genera la tastiera"
+    upd.dispatcher.add_handler(CommandHandler("start", start, Filters.user(username=set(users_list))))
+    upd.dispatcher.add_handler(MessageHandler(Filters.text('Main Menu 🔙') & Filters.user(username=set(users_list)), start))
     for key, value in Config.settings['function'].items():
         if value['active']:
             cmd_str += my_add_handler(commands[key], upd.dispatcher, Filters.user(username=set(value['users_abil'])))
     upd.dispatcher.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
+    upd.dispatcher.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
     upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
