@@ -10,12 +10,16 @@ from time import sleep
 commands = {
     "crypto": {
         "icon": 'Crypto 💰',
-        "row_size": 3,
+        "row_size": 2,
         "desc": "Funzioni crypto",
         "commands": {
-            "get_binance_status": {
-                "icon": "Balance 💰",
-                "desc": "Riepilogo Binance"
+            "get_invest_status": {
+                "icon": "Total Balance 💰",
+                "desc": "Riepilogo degli investimenti"
+            },
+            "get_balance_defi": {
+                "icon": "DeFi Balance 💰",
+                "desc": "Restituisce il bilancio di tutte le crypto"
             },
             "get_value_token_defi": {
                 "icon": "Token DeFi 💰",
@@ -32,7 +36,6 @@ commands = {
         "row_size": 3,
         "desc": "Funzioni mining",
         "commands": {
-            # "get_balance_status": "Restituisce il bilancio di tutte le crypto",
             "get_mining_status": {
                 "icon": "Status ⛏",
                 "desc": "Restituisce lo stato del miner"
@@ -154,16 +157,16 @@ def get_value_token_defi(update, context):
     update.message.reply_text(markdown_text(be_get_token_defi_value()), parse_mode='MarkdownV2')
 
 
-def get_binance_status(update, context):
-    initial_log("get_binance_status", context.args)
+def get_invest_status(update, context):
+    initial_log("get_invest_status", context.args)
     get_open_orders()
     buy_sell_orders = get_order_history()
     update.message.reply_text(get_wallet(buy_sell_orders))
     update.message.reply_document(open('binance/order-wallet.txt', 'r'))
 
 
-def get_balance_status(update, context):
-    initial_log("get_balance_status", context.args)
+def get_balance_defi(update, context):
+    initial_log("get_balance_defi", context.args)
     ret_str = ""
     total_euro = 0
     for key, value in Config.settings['cryptos'].items():
