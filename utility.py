@@ -2,7 +2,7 @@ from subprocess import PIPE, Popen
 from os import system
 from urllib.request import urlopen, Request
 from logging import info, exception
-from json import load
+from json import load, dumps
 from selenium.webdriver import ChromeOptions, Chrome
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -40,16 +40,21 @@ def make_cmd(cmd, sys=False):
     return response
 
 
-def make_request(url, api_binance=False):
+def make_request(url, api_binance=False, body=None):
     info("MAKE REQUEST: %s", url)
     header = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36'
     }
+    if body is not None:
+        header['Content-Type'] = 'application/json'
     if api_binance:
         header['X-MBX-APIKEY'] = Config.settings['binance']['binance_info']['key']
     to_return = {}
     try:
-        to_return['response'] = urlopen(Request(url, headers=header)).read()
+        if body is not None:
+            to_return['response'] = urlopen(Request(url, data=bytes(dumps(body), encoding="utf-8"), headers=header)).read()
+        else:
+            to_return['response'] = urlopen(Request(url, headers=header)).read()
         to_return['state'] = True
     except Exception as e:
         exception(e)

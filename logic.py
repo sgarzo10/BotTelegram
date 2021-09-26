@@ -7,15 +7,15 @@ from tabulate import tabulate
 from os import popen
 
 
-def be_get_apy_defi():
+def be_get_apy_defi(platforms):
     drivers = []
     token_list = []
     try:
-        for plt in Config.settings['platform_defi']:
+        for plt in platforms:
             drivers.append(make_driver_selenium(plt['url'], driver_or_page=False))
         sleep(7)
         i = 0
-        for plt in Config.settings['platform_defi']:
+        for plt in platforms:
             token_list.append([plt['url'], eval(plt['apy'])])
             i += 1
         to_ret = tabulate(token_list, headers=['PLATFORM', 'APY'], tablefmt='orgtbl', floatfmt=".3f")
@@ -28,18 +28,18 @@ def be_get_apy_defi():
     return to_ret
 
 
-def be_get_token_defi_value():
-    to_ret = ""
-    for tk in Config.settings['token_defi']:
-        to_ret += "*" + tk['token'] + ":* "
-        if tk['chain'] != "SOL":
-            to_ret += str(round(loads(
+def be_get_token_defi_value(tokens):
+    to_ret = {}
+    for tk in tokens:
+        if tk['chain'] != "solana":
+            value = round(loads(
                 make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'] + "/price?network=" + tk['chain'])[
-                    'response'])[Config.settings["chain_defi"][tk['chain']]['key']], 5)) + "$\n"
+                    'response'])[Config.settings["chain_defi"][tk['chain']]['key']], 5)
         else:
-            to_ret += str(round(
+            value = round(
                 loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data'][
-                    Config.settings["chain_defi"][tk['chain']]['key']], 5)) + "$\n"
+                    Config.settings["chain_defi"][tk['chain']]['key']], 5)
+        to_ret[tk['token']] = value
     return to_ret
 
 
@@ -128,30 +128,54 @@ def get_trex_info():
     return trex_info
 
 
-def get_balance_info(crypto, wallet_ids):
-    res_conv = make_request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=EUR&slug=" + crypto)
-    balance = {
-        'walletts': {},
-        'conv_eur': list(loads(res_conv['response'])['data'].values())[0]['quote']['EUR']['price'],
-        'tot_eur_value': 0.00000000,
-        'tot_crypto_value': 0.00000000
+def be_get_balance_defi(wallet):
+    body = {
+        "query": "\n        query($address: ID!, $noCache: Boolean) {\n          balance(address: $address, noCache: $noCache) {\n            network\n            balances {\n              ...balanceFields\n            }\n          }\n          lending(address: $address) {\n            data {\n              network\n              name\n              codename\n              shortname\n              url\n              logoURI\n              tvl\n              supplied {\n                ...tokenFields\n              }\n              borrowed {\n                ...tokenFields\n              }\n            }\n            failedPlatforms\n          }\n          earn(address: $address) {\n            data {\n              network\n              name\n              shortname\n              codename\n              requirePro\n              url\n              logoURI\n              tvl\n              pools {\n                name\n                logoURI\n                totalSupply\n                totalDeposited\n                currentAmount\n                pendingReward {\n                  ...balanceFields\n                }\n                underlyingTokens {\n                  ...underlyingTokenFields\n                }\n                dailyRewardPerWantedToken {\n                  ...balanceFields\n                }\n                transactions {\n                  ...transactionFields\n                }\n                aprs {\n                  name\n                  apr\n                }\n                avgLpCost {\n                  cost {\n                    token0\n                    token1\n                  }\n                  change {\n                    token0\n                    token1\n                  }\n                }\n                overallApy\n                pid\n                contractAddress\n                receiverContractAddresses\n                poolAddress\n              }\n            }\n            failedPlatforms\n          }\n        }\n\n        fragment tokenFields on LendingAsset {\n          address\n          suppliedAmount\n          borrowedAmount\n          underlyingAddress\n          borrowApy\n          supplyApy\n        }\n\n        fragment balanceFields on Balance {\n          address\n          quantity\n        }\n\n        fragment transactionFields on Transaction {\n          type\n          hash\n          amount\n          gasSpent\n          timestamp\n        }\n\n        fragment underlyingTokenFields on UnderlyingToken {\n          address\n          quantity\n          weight\n        }\n      ",
+        "variables": {
+            "address": wallet,
+            "noCache": False
+        }
     }
-    if res_conv['state'] is True:
-        for key, value in wallet_ids.items():
-            res = make_request(Config.settings['cryptos'][crypto]['api_balance'] + value)
-            if res['state'] is True:
-                crypto_value = eval(Config.settings['cryptos'][crypto]['function_balance'])
-                balance['walletts'][key] = {
-                    'id': value,
-                    'eur_value': str(round(balance['conv_eur'] * crypto_value, 2)) + " €",
-                    'crypto_value': str(round(crypto_value, 6)) + " " + Config.settings['cryptos'][crypto]['crypto']
-                }
-                balance['tot_eur_value'] = balance['tot_eur_value'] + balance['conv_eur'] * crypto_value
-                balance['tot_crypto_value'] = balance['tot_crypto_value'] + crypto_value
-        balance['tot_eur_value'] = round(balance['tot_eur_value'], 2)
-        balance['tot_crypto_value'] = str(round(balance['tot_crypto_value'], 6)) + " " + Config.settings['cryptos'][crypto]['crypto']
-    balance['conv_eur'] = str(round(balance['conv_eur'], 6)) + " €"
-    return balance
+    response = loads(make_request("https://api-sg.growingfi.com/v3/gql", body=body)['response'])['data']
+    earn = response['earn']['data']
+    balance = response['balance']
+    to_ret = {
+        "chain": {},
+        'tot_usd_value': 0
+    }
+    for net in balance:
+        if net['network'] not in to_ret["chain"]:
+            to_ret["chain"][net['network']] = {}
+        res = make_request(Config.settings['chain_defi'][net['network']]['api_balance'] + wallet)
+        if res['state'] is True:
+            name = Config.settings['chain_defi'][net['network']]['crypto']
+            res_conv = make_request(
+                "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=USD&slug=" + Config.settings['binance']['symbols'][name + "BUSD"])
+            crypto_value = eval(Config.settings['chain_defi'][net['network']]['function_balance'])
+            to_ret["chain"][net['network']][name] = {
+                "crypto": round(crypto_value, 5),
+                "fiat": round(crypto_value * list(loads(res_conv['response'])['data'].values())[0]['quote']['USD']['price'], 2)
+            }
+            to_ret['tot_usd_value'] = to_ret['tot_usd_value'] + to_ret["chain"][net['network']][name]["fiat"]
+    for plt in earn:
+        if plt['network'] not in to_ret["chain"]:
+            to_ret["chain"][plt['network']] = {}
+        for pool in plt['pools']:
+            name = ""
+            if pool['pendingReward'] is not None:
+                tot = float(plt['pools'][0]['currentAmount']) + float(pool['pendingReward'][0]['quantity']) / pow(10, 18)
+            else:
+                tot = float(pool['currentAmount'])
+            for tk in Config.settings['token_defi']:
+                if tk['addr'].upper() == pool['underlyingTokens'][0]['address'].upper():
+                    name = tk['token']
+            fiat_value = be_get_token_defi_value([{"token": name, "addr": pool['underlyingTokens'][0]['address'], "chain": plt['network']}])[name]
+            to_ret["chain"][plt['network']][name] = {
+                "crypto": round(tot, 5),
+                "fiat": round(tot * fiat_value, 2)
+            }
+            to_ret['tot_usd_value'] = to_ret['tot_usd_value'] + to_ret["chain"][plt['network']][name]["fiat"]
+    return to_ret
 
 
 def get_miner_info(cur_trex_profile, wallet_id):
@@ -176,7 +200,7 @@ def calculate_avg_hasrate(current_time, stats, time_key, hashrate_key):
 def get_ethermine_info(cur_trex_profile, wallet_id):
     ethermine_info = {}
     trex_profile = Config.settings['trex']['profiles'][cur_trex_profile]
-    crypto = Config.settings['cryptos'][trex_profile['crypto']]
+    crypto = Config.settings['chain_defi'][trex_profile['crypto']]
     response_dash = make_request(trex_profile['api_domain'] + "/miner/" + wallet_id + "/dashboard")
     response_pay = make_request(trex_profile['api_domain'] + "/miner/" + wallet_id + "/dashboard/payouts")
     if response_dash['state'] is True and response_pay['state'] is True:
@@ -198,7 +222,7 @@ def get_ethermine_info(cur_trex_profile, wallet_id):
 def get_2miners_info(cur_trex_profile, wallet_id):
     two_miners_info = {}
     trex_profile = Config.settings['trex']['profiles'][cur_trex_profile]
-    crypto = Config.settings['cryptos'][trex_profile['crypto']]
+    crypto = Config.settings['chain_defi'][trex_profile['crypto']]
     response_dash = make_request(trex_profile['api_domain'] + "/" + wallet_id)
     if response_dash['state'] is True:
         dashboard = loads(response_dash['response'])
@@ -265,7 +289,7 @@ def be_set_trex_profile(profile):
             dev_string = dev_string + str(i) + ", "
         zero_string = zero_string[:-2]
         dev_string = dev_string[:-2]
-        crypto = Config.settings['cryptos'][trex_profile['crypto']]
+        crypto = Config.settings['chain_defi'][trex_profile['crypto']]
         data_file = data_file.replace("BUILD_MODE", zero_string)
         data_file = data_file.replace("DEVICES_ID", dev_string)
         data_file = data_file.replace("KERNEL_LIST", zero_string)

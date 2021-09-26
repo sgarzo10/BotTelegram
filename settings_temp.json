@@ -48,18 +48,6 @@
 		"password": "password per meross",
 		"device_name": "nome del device su applicazione meross"
 	},
-	"cryptos": {
-		"nome della crypto": {
-			"crypto": "crypto generata (es. ETH, RVN)",
-			"algo": "algoritmo per il mining",
-			"api_balance": "end point per il recupero del bilancio",
-			"function_balance": "codice da eseguire con eval per parsare la response di api_balance",
-			"pow_divisor": "potenza del 10 per divisore per revenue (numero intero)",
-			"wallets": {
-				"nome del wallet": "id del wallet"
-			}
-		}
-	},
 	"trex": {
 		"worker_name": "nome del worker",
 		"gpu_number": "numero di gpu montate sul worker (numero intero)",
@@ -69,7 +57,7 @@
 				"wallet": "wallet id",
 				"intensity": "lista delle intensità per le gpu di trex (lista di interi)",
 				"api_domain": "end point per le API del sito della pool",
-				"crypto": "nome della crypto usata come chiave in cryptos"
+				"crypto": "nome della chain usata come chiave in chain_defi"
 			}
 		}
 	},
@@ -104,9 +92,17 @@
 	"chromepath": "path del file chrome.exe",
 	"chain_defi": {
 		"nome_chain": {
+			"crypto": "crypto della chain (es. ETH, BNB, RVN)",
+			"algo": "algoritmo per il mining",
+			"api_balance": "end point per il recupero del bilancio",
+			"function_balance": "codice da eseguire con eval per parsare la response di api_balance",
+			"pow_divisor": "potenza del 10 per divisore per revenue (numero intero)",
 			"url": "url api dex per recupero valore token",
 			"key": "chiave del valore in dollari"
 		}
+	},
+	"wallet_defi": {
+		"nome wallet": "id wallet"
 	},
 	"token_defi": [
 		{

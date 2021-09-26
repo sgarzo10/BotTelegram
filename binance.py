@@ -101,6 +101,8 @@ def get_order_history():
 
 def get_wallet(buy_sell_orders):
     assets_list = []
+    total_balance = 0
+    total_total_invest = 0
     total_total_margin = 0
     all_invest = 0
     coin = 'USD'
@@ -154,6 +156,7 @@ def get_wallet(buy_sell_orders):
                 total_margin = total_return - (buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['buy']['medium'])
         actual_budget = mining_budget + buy_sell_orders[key]['buy']['qty_total'] - buy_sell_orders[key]['sell']['qty_total'] - fee
         sell_now = actual_budget * actual_value
+        total_balance += sell_now
         if actual_budget > 0:
             if buy_sell_orders[key]['buy']['medium'] > 0:
                 perc_wall = ((total_invest - total_return) * 100) / all_invest
@@ -165,17 +168,19 @@ def get_wallet(buy_sell_orders):
             final_margin = actual_margin + total_margin
         else:
             final_margin = actual_margin + total_margin + ((mining_budget - sell_mining) * actual_value)
+        total_total_invest += total_invest - total_return
         total_total_margin += final_margin
         assets_list.append([key.replace("BUSD", ""), mining_budget, perc_wall, buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['buy']['medium'], actual_value, ath, total_invest, buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['sell']['medium'], total_return, total_margin, actual_budget, sell_now, actual_margin, final_margin])
+    head = ['ASSET', 'MINED', 'PERC WAL', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT SELL', 'AVG SELL', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
     f = open("binance/order-wallet.txt", "a")
-    f.write(tabulate(assets_list, headers=['ASSET', 'MINED', 'PERC WAL', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT SELL', 'AVG SELL', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL MARGIN: " + str(total_total_margin))
+    f.write(tabulate(assets_list, headers=head, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL INVEST: " + str(round(total_total_invest, 2)) + "  TOTAL MARGIN: " + str(round(total_total_margin, 2)) + "   TOTAL BALANCE: " + str(round(total_balance, 2)))
     f.close()
     assets_list_tg = []
     for asset in assets_list:
         if asset[12] > 0 and asset[4] > 0:
             assets_list_tg.append([asset[0], asset[4], asset[5], asset[12], asset[14]])
     to_ret = tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'MARGIN'], tablefmt='orgtbl', floatfmt=".6f")
-    assets_list.insert(0, ["ASSET", "MINED", 'PERC WAL', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT SELL', 'AVG SELL', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN'])
+    assets_list.insert(0, head)
     with open('binance/assets.csv', 'w', newline='') as file:
         writer(file).writerows(assets_list)
     return to_ret
