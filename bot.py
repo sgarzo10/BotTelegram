@@ -2,7 +2,7 @@ from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_balance_defi, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_balance_defi, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
@@ -117,9 +117,13 @@ commands = {
     },
     "cross": {
         "icon": "Cross 🔮",
-        "row_size": 2,
+        "row_size": 3,
         "desc": "Funzioni cross",
         "commands": {
+            "status_generali": {
+                "icon": "Generali 🔮",
+                "desc": "Recupera lo stato dell'investimetno in generali"
+            },
             "shutdown_system": {
                 "icon": "Shutdown 🔮",
                 "desc": "Arresta il sistema"
@@ -131,6 +135,11 @@ commands = {
         }
     }
 }
+
+
+def status_generali(update, context):
+    initial_log("status_generali", context.args)
+    update.message.reply_text(be_status_generali())
 
 
 def get_public_ip(update, context):

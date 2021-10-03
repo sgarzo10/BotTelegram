@@ -5,6 +5,47 @@ from logging import exception
 from time import sleep
 from tabulate import tabulate
 from os import popen
+from html import unescape
+
+
+def be_status_generali():
+    resp = unescape(str(make_request("https://www.generali.it/quotazioni/genera-sviluppo-sostenibile")['response']))
+    nomi = []
+    valori = []
+    for r in resp.split("<h2 class=\"h4 font-weight-bold\">")[1:]:
+        nomi.append(r.split("</h2>")[0])
+    for r in resp.split("quotazioni-specifiche__value__number\">")[1:]:
+        valori.append(r.split(" </span>")[0])
+    i = 0
+    generali_now = {}
+    while i < len(nomi):
+        generali_now[nomi[i]] = float(valori[i].replace(",", "."))
+        i += 1
+    tot_profit = 0
+    tot_invest = 0
+    sell_all = 0
+    assets_list = []
+    for key, value in Config.settings["generali"]['investimenti'].items():
+        qty_total = 0
+        invst_total = 0
+        for o in value:
+            qty_total += o['amount']
+            invst_total += o['amount'] * o['value']
+        k = ""
+        for k in generali_now.keys():
+            if k.find(key.upper()) != -1:
+                break
+        sell = round(qty_total * generali_now[k], 2)
+        medium_buy = round(invst_total / qty_total, 4)
+        profit = round(sell - invst_total, 2)
+        tot_profit += profit
+        tot_invest += invst_total
+        sell_all += sell
+        assets_list.append([k, round(qty_total, 2), medium_buy, generali_now[k], round(invst_total, 2), sell, profit])
+    rel_tot_invest = round(tot_invest * 2 + sum(Config.settings["generali"]['fee']), 2)
+    balance = round(tot_invest + sell_all, 2)
+    margin = round(tot_profit - sum(Config.settings["generali"]['fee']), 2)
+    return tabulate(assets_list, headers=['FONDO', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'TOT INVEST', 'SELL NOW', 'MARGIN'], tablefmt='orgtbl', floatfmt=".2f") + "\n\nTOTAL BALANCE: " + str(balance) + "   TOTAL INVEST: " + str(rel_tot_invest) + "   TOTAL MARGIN: " + str(margin)
 
 
 def be_get_apy_defi(platforms):
