@@ -4,7 +4,7 @@ from hmac import new
 from hashlib import sha256
 from tabulate import tabulate
 from csv import writer
-from matplotlib.pyplot import pie, legend, suptitle, axis, figure
+from matplotlib.pyplot import pie, legend, suptitle, axis, figure, close, cla
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import array
 
@@ -162,10 +162,14 @@ def prepare_output(output_data):
     legend(patch, [p['label'] for p in output_data['percs_wall']], loc="upper left", prop={'size': 9}, bbox_to_anchor=(0.0, 0.8), bbox_transform=fig2.transFigure)
     axis('equal')
     suptitle("\nTOTAL CRYPTO: " + str(round(output_data['total_balance'], 2)) + "$ - " + str(round(output_data['total_balance_crypto_eur'], 2)) + "€")
-    pdf = PdfPages("binance//wallet-allocation.pdf")
+    pdf = PdfPages("binance/wallet-allocation.pdf")
     for fig in range(1, figure().number):
         pdf.savefig(fig)
     pdf.close()
+    fig1.clear()
+    fig2.clear()
+    cla()
+    close("all")
     head = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
     f = open("binance/order-wallet.txt", "a")
     f.write(tabulate(output_data['assets_list'], headers=head, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL INVEST: " +

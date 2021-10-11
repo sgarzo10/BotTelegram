@@ -131,10 +131,52 @@ commands = {
             "get_public_ip": {
                 "icon": "Public IP 🔮",
                 "desc": "Restituisce IP pubblico del server"
+            },
+            "get_config": {
+                "icon": "Get Config 🔮",
+                "desc": "Restituisce il file di configurazione del bot"
+            },
+            "update_config": {
+                "icon": "Update Config 🔮",
+                "desc": "Aggiorna il file di configurazione del bot"
+            },
+            "reload_config": {
+                "icon": "Reload Config 🔮",
+                "desc": "Ricarica il file di configurazione del bot"
             }
         }
     }
 }
+
+
+def update_config(update, context):
+    initial_log("update_config", context.args)
+    Config.update_conf = True
+    update.message.reply_text("INVIARE IL FILE")
+
+
+def doc_handler(update, context):
+    initial_log("doc_handler", context)
+    if update.message.document.file_name == "settings.json" and update.message.document.mime_type == "application/json":
+        if Config.update_conf:
+            f = context.bot.getFile(update.message.document.file_id)
+            f.download("settings.json")
+            Config.update_conf = False
+            to_ret = "FILE DI CONFIGURAZIONE AGGIORNATO!"
+        else:
+            to_ret = "AGGIORNAMENTO FILE DI CONFIGURAZIONE NON ABILITATO!"
+        update.message.reply_text(to_ret)
+
+
+def reload_config(update, context):
+    initial_log("reload_config", context.args)
+    Config().reload()
+    update.message.reply_text("FILE DI CONFIGURAZIONE RICARICATO!")
+
+
+def get_config(update, context):
+    initial_log("get_config", context.args)
+    update.message.reply_document(open('settings.json', 'r'))
 
 
 def status_generali(update, context):
@@ -454,7 +496,7 @@ def main():
         filename=None,  # "bot.log",
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
-    Config()
+    Config().reload()
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
     users_list = []
     for key, value in Config.settings['function'].items():
@@ -470,6 +512,7 @@ def main():
     upd.dispatcher.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
     upd.dispatcher.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
     upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
+    upd.dispatcher.add_handler(MessageHandler(Filters.document, doc_handler))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)

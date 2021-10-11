@@ -122,4 +122,12 @@ def make_button_list(string_list, string_callback):
 
 
 class Config:
-    settings = load(open("settings.json"))
+
+    settings = {}
+    update_conf = False
+
+    @staticmethod
+    def reload():
+        f = open("settings.json")
+        Config.settings = load(f)
+        f.close()
