@@ -175,6 +175,7 @@ def get_invest_status(update, context):
     buy_sell_orders = get_order_history()
     update.message.reply_text(get_wallet(buy_sell_orders))
     update.message.reply_document(open('binance/order-wallet.txt', 'r'))
+    update.message.reply_document(open('binance/wallet-allocation.pdf', 'rb'))
 
 
 def get_balance_defi(update, context):
