@@ -230,8 +230,8 @@ def get_wallet(buy_sell_orders):
         output_data['percs_wall'][i]['label'] += f"({round(output_data['percs_wall'][i]['perc'], 2)}%)"
         i += 1
     output_data['total_balance_stable'] = sum(Config.settings["binance"]["stablecoin"]["USD"])
-    output_data['total_balance_crypto_eur'] = output_data['total_balance'] * get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
-    output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] * get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
+    output_data['total_balance_crypto_eur'] = output_data['total_balance'] / get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
+    output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
     output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]["add"]) + Config.settings["binance"]["card"]["res"]
     output_data['total_balance_eur'] = sum(Config.settings["binance"]["stablecoin"]["EUR"]) + Config.settings["binance"]["card"]["res"]
     output_data['total_eur'] = output_data['total_balance_eur'] + output_data['total_balance_stable_eur'] + output_data['total_balance_crypto_eur']
