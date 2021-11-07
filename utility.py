@@ -41,7 +41,7 @@ def make_cmd(cmd, sys=False):
 
 
 def make_request(url, api_binance=False, body=None):
-    # info("MAKE REQUEST: %s", url)
+    info("MAKE REQUEST: %s", url)
     header = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36'
     }

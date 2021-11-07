@@ -72,15 +72,7 @@ def be_get_apy_defi(platforms):
 def be_get_token_defi_value(tokens):
     to_ret = {}
     for tk in tokens:
-        if tk['chain'] != "solana":
-            value = round(loads(
-                make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'] + "/price?network=" + tk['chain'])[
-                    'response'])[Config.settings["chain_defi"][tk['chain']]['key']], 5)
-        else:
-            value = round(
-                loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data'][
-                    Config.settings["chain_defi"][tk['chain']]['key']], 5)
-        to_ret[tk['token']] = value
+        to_ret[tk['token']] = round(float(loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data'][Config.settings["chain_defi"][tk['chain']]['key']]), 5)
     return to_ret
 
 
@@ -473,28 +465,20 @@ def be_stop_access_point():
 def get_mac_and_ip(client_number, cmd_out_split):
     to_ret = {}
     clients = {}
-    if client_number > 0:
-        response_arp = make_cmd("arp -an " + Config.settings['access_point']['ip'])
-        if response_arp['cmd_err'] == "":
-            response_arp_split = response_arp['cmd_out'].split("\n")
-            for i in range(client_number):
-                mac_adrress = cmd_out_split[i].split("Autenticato")[0].strip()
-                mac_address_to_find = mac_adrress.replace(":", "-")
-                found = False
-                for line in response_arp_split:
-                    if line.find(mac_address_to_find) != -1:
-                        clients[mac_adrress] = line.split(mac_address_to_find)[0].strip()
-                        found = True
-                if found is False:
-                    clients[mac_adrress] = 'undefined'
-            to_ret['state'] = True
-            to_ret['status'] = clients
-        else:
-            to_ret['state'] = False
-            to_ret['status'] = "ERRORE: " + response_arp["cmd_err"]
-    else:
-        to_ret['state'] = False
-        to_ret['status'] = "ERRORE: numero client minore o uguale a zero"
+    response_arp = make_cmd("arp -an " + Config.settings['access_point']['ip'])
+    if response_arp['cmd_err'] == "":
+        response_arp_split = response_arp['cmd_out'].split("\n")
+        for i in range(client_number):
+            mac_adrress = cmd_out_split[i].split("Autenticato")[0].strip()
+            mac_address_to_find = mac_adrress.replace(":", "-")
+            found = False
+            for line in response_arp_split:
+                if line.find(mac_address_to_find) != -1:
+                    clients[mac_adrress] = line.split(mac_address_to_find)[0].strip()
+                    found = True
+            if found is False:
+                clients[mac_adrress] = 'undefined'
+        to_ret['status'] = clients
     return to_ret
 
 
@@ -509,19 +493,15 @@ def be_get_access_point_status():
         to_ret['status'] = cmd_out_split[11].split(":")[1].strip()
         if to_ret['status'] == 'Avviato':
             to_ret['client'] = cmd_out_split[15].split(":")[1].strip()
-            mac_ip = get_mac_and_ip(int(to_ret['client']), cmd_out_split[16:])
-            if mac_ip['state'] is True:
-                to_ret['clients'] = mac_ip['status']
-            else:
-                to_ret = mac_ip
-        if to_ret['state'] is True:
-            response = make_cmd("netsh wlan show hostednetwork setting=security")
-            if response['cmd_err'] == "":
-                to_ret['password'] = response['cmd_out'].split("\n")[6].split(":")[1].strip()
-                to_ret['state'] = True
-            else:
-                to_ret['state'] = False
-                to_ret['status'] = "ERRORE: " + response["cmd_err"]
+            if int(to_ret['client']) > 0:
+                mac_ip = get_mac_and_ip(int(to_ret['client']), cmd_out_split[16:])
+                if 'status' in mac_ip:
+                    to_ret['clients'] = mac_ip['status']
+        response = make_cmd("netsh wlan show hostednetwork setting=security")
+        if response['cmd_err'] == "":
+            to_ret['password'] = response['cmd_out'].split("\n")[6].split(":")[1].strip()
+        else:
+            to_ret['password'] = "ERRORE: " + response["cmd_err"]
     else:
         to_ret['state'] = False
         to_ret['status'] = "ERRORE: " + response["cmd_err"]

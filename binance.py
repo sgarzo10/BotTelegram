@@ -125,7 +125,7 @@ def prepare_url_coinmarketcap(buy_sell_orders, coin):
     return url
 
 
-def get_ath_and_value(res_conv, key, coin):
+def get_ath_and_value(res_conv, key, coin, ath=False):
     cry = {}
     to_ret = {}
     found = False
@@ -134,16 +134,16 @@ def get_ath_and_value(res_conv, key, coin):
             found = True
             break
     if found:
-        res = str(make_request("https://coinmarketcap.com/currencies/" + cry['slug'])['response'])
-        to_ret['ath'] = res.split("<div>All Time High</div>")[1].split("<span>")[1].split("</span>")[0][1:]
+        if ath:
+            res = str(make_request("https://coinmarketcap.com/currencies/" + cry['slug'])['response'])
+            to_ret['ath'] = res.split("<div>All Time High</div>")[1].split("<span>")[1].split("</span>")[0][1:]
         to_ret['actual_value'] = cry['quote'][coin]['price']
     else:
         addr = Config.settings['binance']["symbols"][key].split("-")[0]
         chain = Config.settings['binance']["symbols"][key].split("-")[1]
-        to_ret['actual_value'] = round(loads(
-            make_request(Config.settings["chain_defi"][chain]['url'] + addr + "/price?network=" + chain)['response'])[
-                                 Config.settings["chain_defi"][chain]['key']], 5)
-        to_ret['ath'] = 'N.D.'
+        to_ret['actual_value'] = round(float(loads(make_request(Config.settings["chain_defi"][chain]['url'] + addr)['response'])['data'][Config.settings["chain_defi"][chain]['key']]), 5)
+        if ath:
+            to_ret['ath'] = 'N.D.'
     return to_ret
 
 
@@ -170,7 +170,7 @@ def prepare_output(output_data):
     fig2.clear()
     cla()
     close("all")
-    head = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'ACTUAL', 'ATH', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
+    head = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'ACTUAL', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
     f = open("binance/order-wallet.txt", "a")
     f.write(tabulate(output_data['assets_list'], headers=head, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL INVEST: " +
             str(round(output_data['total_total_invest'], 2)) + "$  TOTAL MARGIN: " + str(round(output_data['total_total_margin'], 2)) +
@@ -181,10 +181,11 @@ def prepare_output(output_data):
     assets_list_tg = []
     for asset in output_data['assets_list']:
         if asset[11] > 0:
-            assets_list_tg.append([asset[0], asset[4], asset[6], asset[11], asset[14]])
+            assets_list_tg.append([asset[0], asset[4], asset[6], asset[10], asset[13]])
     output_data['assets_list'].insert(0, head)
-    with open('binance/assets.csv', 'w', newline='') as file:
-        writer(file).writerows(output_data['assets_list'])
+    file = open('binance/assets.csv', 'w', newline='')
+    writer(file).writerows(output_data['assets_list'])
+    file.close()
     return tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".4f")
 
 
@@ -227,15 +228,16 @@ def get_wallet(buy_sell_orders):
             final_margin = actual_margin + total_margin + ((actual_budget['mining'] - sell_mining) * value_and_ath['actual_value'])
         output_data['total_total_invest'] += total_invest - total_return
         output_data['total_total_margin'] += final_margin
-        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], value_and_ath['actual_value'], value_and_ath['ath'], total_invest, total_return, total_margin, actual_budget['budget'], sell_now, actual_margin, final_margin])
+        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], value_and_ath['actual_value'], total_invest, total_return, total_margin, actual_budget['budget'], sell_now, actual_margin, final_margin])
     i = 0
     while i < len(output_data['percs_wall']):
         output_data['percs_wall'][i]['perc'] = (output_data['percs_wall'][i]['perc'] * 100) / output_data['total_balance']
         output_data['percs_wall'][i]['label'] += f"({round(output_data['percs_wall'][i]['perc'], 2)}%)"
         i += 1
+    eur_value = get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
     output_data['total_balance_stable'] = sum(Config.settings["binance"]["stablecoin"]["USD"])
-    output_data['total_balance_crypto_eur'] = output_data['total_balance'] / get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
-    output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
+    output_data['total_balance_crypto_eur'] = output_data['total_balance'] / eur_value
+    output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / eur_value
     output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]["add"]) + Config.settings["binance"]["card"]["res"]
     output_data['total_balance_eur'] = sum(Config.settings["binance"]["stablecoin"]["EUR"]) + Config.settings["binance"]["card"]["res"]
     output_data['total_eur'] = output_data['total_balance_eur'] + output_data['total_balance_stable_eur'] + output_data['total_balance_crypto_eur']
