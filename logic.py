@@ -72,7 +72,10 @@ def be_get_apy_defi(platforms):
 def be_get_token_defi_value(tokens):
     to_ret = {}
     for tk in tokens:
-        to_ret[tk['token']] = round(float(loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data'][Config.settings["chain_defi"][tk['chain']]['key']]), 5)
+        payload = loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data']
+        if isinstance(payload, list):
+            payload = payload[0]
+        to_ret[tk['token']] = round(float(payload[Config.settings["chain_defi"][tk['chain']]['key']]), 5)
     return to_ret
 
 
@@ -172,10 +175,7 @@ def be_get_balance_defi(wallet):
     response = loads(make_request("https://api-sg.growingfi.com/v3/gql", body=body)['response'])['data']
     earn = response['earn']['data']
     balance = response['balance']
-    to_ret = {
-        "chain": {},
-        'tot_usd_value': 0
-    }
+    to_ret = {"chain": {}, 'tot_usd_value': 0}
     for net in balance:
         if net['network'] not in to_ret["chain"]:
             to_ret["chain"][net['network']] = {}
@@ -270,9 +270,7 @@ def get_2miners_info(cur_trex_profile, wallet_id):
 
 
 def get_meross_info():
-    device_info = {
-        'state': False
-    }
+    device_info = {'state': False}
     try:
         http_handler = MerossHttpClient(email=Config.settings['meross']['email'], password=Config.settings['meross']['password'])
         devices = http_handler.list_devices()
@@ -484,9 +482,7 @@ def get_mac_and_ip(client_number, cmd_out_split):
 
 def be_get_access_point_status():
     response = make_cmd("netsh wlan show hostednetwork")
-    to_ret = {
-        'state': True
-    }
+    to_ret = {'state': True}
     if response['cmd_err'] == "":
         cmd_out_split = response['cmd_out'].split("\n")
         to_ret['name'] = cmd_out_split[4].split("\"")[1].split("\"")[0]

@@ -4,6 +4,7 @@ from hmac import new
 from hashlib import sha256
 from tabulate import tabulate
 from csv import writer
+from logic import be_get_token_defi_value
 from matplotlib.pyplot import pie, legend, suptitle, axis, figure, close, cla
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import array
@@ -53,10 +54,7 @@ def get_order_history():
         orders = {}
         if resp['state'] is True:
             orders = loads(resp['response'])
-        medium = 0
-        qty_total = 0
-        medium_sell = 0
-        qty_total_sell = 0
+        medium, qty_total, medium_sell, qty_total_sell = 0, 0, 0, 0
         if key in Config.settings['binance']["orders"]:
             for order in Config.settings['binance']["orders"][key]:
                 if order['type'] == 'BUY':
@@ -76,27 +74,14 @@ def get_order_history():
                 medium_sell += float(order['price']) * float(order['qty'])
                 qty_total_sell += float(order['qty'])
             order_list.append([type_order, order['symbol'], order['price'], order['qty'], order['commission'] + " " + order['commissionAsset'], order['quoteQty']])
-        buy_sell_orders[key] = {}
+        buy_sell_orders[key] = {
+            'buy': {'medium': 0, 'qty_total': 0},
+            'sell': {'medium': 0, 'qty_total': 0}
+        }
         if qty_total > 0:
-            buy_sell_orders[key]['buy'] = {
-                'medium': medium / qty_total,
-                'qty_total': qty_total
-            }
-        else:
-            buy_sell_orders[key]['buy'] = {
-                'medium': 0,
-                'qty_total': 0
-            }
+            buy_sell_orders[key]['buy'] = {'medium': medium / qty_total, 'qty_total': qty_total}
         if qty_total_sell > 0:
-            buy_sell_orders[key]['sell'] = {
-                'medium': medium_sell / qty_total_sell,
-                'qty_total': qty_total_sell
-            }
-        else:
-            buy_sell_orders[key]['sell'] = {
-                'medium': 0,
-                'qty_total': 0
-            }
+            buy_sell_orders[key]['sell'] = {'medium': medium_sell / qty_total_sell, 'qty_total': qty_total_sell}
     f = open("binance/order-wallet.txt", "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
@@ -104,10 +89,7 @@ def get_order_history():
 
 
 def calculate_budget_coin(buy_sell_orders, key):
-    to_ret = {
-        'mining': 0,
-        'fee': 0
-    }
+    to_ret = {'mining': 0, 'fee': 0}
     if key in Config.settings['binance']['mining']:
         to_ret['mining'] = Config.settings['binance']['mining'][key]
     if key in Config.settings['binance']['fee']:
@@ -129,8 +111,9 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     cry = {}
     to_ret = {}
     found = False
+    name = key.replace("BUSD", "")
     for cry in res_conv:
-        if cry['symbol'] == key.replace("BUSD", ""):
+        if cry['symbol'] == name:
             found = True
             break
     if found:
@@ -141,7 +124,7 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     else:
         addr = Config.settings['binance']["symbols"][key].split("-")[0]
         chain = Config.settings['binance']["symbols"][key].split("-")[1]
-        to_ret['actual_value'] = round(float(loads(make_request(Config.settings["chain_defi"][chain]['url'] + addr)['response'])['data'][Config.settings["chain_defi"][chain]['key']]), 5)
+        to_ret['actual_value'] = be_get_token_defi_value([{"token": name, "addr": addr, "chain": chain}])[name]
         if ath:
             to_ret['ath'] = 'N.D.'
     return to_ret
@@ -204,9 +187,7 @@ def get_wallet(buy_sell_orders):
         value_and_ath = get_ath_and_value(res_conv, key, coin)
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
-        total_margin = 0
-        actual_margin = 0
-        sell_mining = 0
+        total_margin, actual_margin, sell_mining = 0, 0, 0
         actual_budget = calculate_budget_coin(buy_sell_orders[key], key)
         if buy_sell_orders[key]['sell']['qty_total'] > 0 or actual_budget['fee'] > 0:
             if buy_sell_orders[key]['sell']['qty_total'] > buy_sell_orders[key]['buy']['qty_total']:
