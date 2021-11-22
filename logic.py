@@ -185,6 +185,7 @@ def be_get_balance_defi(wallet):
             if cryp['address'] in coin_json.keys():
                 crypto_value = float(cryp['quantity'])
                 if crypto_value > 0:
+                    crypto_value /= pow(10, Config.settings['chain_defi'][net['network']]['pow_divisor'])
                     if net['network'] not in to_ret["chain"]:
                         to_ret["chain"][net['network']] = {}
                     name = coin_json[cryp['address']]
