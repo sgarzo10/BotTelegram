@@ -110,13 +110,11 @@ def prepare_url_coinmarketcap(buy_sell_orders, coin):
 def get_ath_and_value(res_conv, key, coin, ath=False):
     cry = {}
     to_ret = {}
-    found = False
     name = key.replace("BUSD", "")
-    for cry in res_conv:
-        if cry['symbol'] == name:
-            found = True
-            break
-    if found:
+    if Config.settings['binance']["symbols"][key][:2] != '0x':
+        for cry in res_conv:
+            if cry['symbol'] == name:
+                break
         if ath:
             res = str(make_request("https://coinmarketcap.com/currencies/" + cry['slug'])['response'])
             to_ret['ath'] = res.split("<div>All Time High</div>")[1].split("<span>")[1].split("</span>")[0][1:]
@@ -163,7 +161,7 @@ def prepare_output(output_data):
     f.close()
     assets_list_tg = []
     for asset in output_data['assets_list']:
-        if asset[11] > 0:
+        if asset[10] > 0:
             assets_list_tg.append([asset[0], asset[4], asset[6], asset[10], asset[13]])
     output_data['assets_list'].insert(0, head)
     file = open('binance/assets.csv', 'w', newline='')
@@ -229,7 +227,7 @@ def get_wallet(buy_sell_orders):
     while i < len(output_data['percs_wall_eur']):
         output_data['percs_wall_eur'][i]['label'] = output_data['percs_wall_eur'][i]['label'].replace("perc", f"({round(output_data['percs_wall_eur'][i]['perc'], 2)}%)")
         i += 1
-    output_data['assets_list'].sort(key=lambda x: x[12], reverse=True)
+    output_data['assets_list'].sort(key=lambda x: x[11], reverse=True)
     output_data['percs_wall'].sort(key=lambda x: x['perc'], reverse=True)
     output_data['percs_wall_eur'].sort(key=lambda x: x['perc'], reverse=True)
     return prepare_output(output_data)

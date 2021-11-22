@@ -227,7 +227,7 @@ def get_balance_defi(update, context):
     for key, value in Config.settings['wallet_defi'].items():
         balance_info = be_get_balance_defi(value)
         total_usd += balance_info['tot_usd_value']
-        ret_str += get_separator(key.replace("_", " ").upper()) + "*ID:* " + value + "\n*VALUE:* " + str(balance_info['tot_usd_value']) + " $\n"
+        ret_str += get_separator(key.replace("_", " ").upper()) + "*ID:* " + value['id'] + "\n*VALUE:* " + str(balance_info['tot_usd_value']) + " $\n"
         for key_c, value_c in balance_info["chain"].items():
             ret_str += get_separator()
             ret_str += "*CHAIN:* " + key_c.upper() + "\n"
@@ -280,16 +280,16 @@ def get_mining_status(update, context):
             gpu_str = gpu_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n" + reported_hashrate + " " + accepted_count + "\n"
             gpu_str = gpu_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n"
         miner_info = get_miner_info(trex_info['cur_trex_profile'], trex_info['wallet_id'])
-        chain_miner = Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto']
-        balance_info = be_get_balance_defi(trex_info['wallet_id'])['chain'][chain_miner][Config.settings['chain_defi'][chain_miner]['crypto']]
+        # chain_miner = Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto']
+        # balance_info = be_get_balance_defi(trex_info['wallet_id'])['chain'][chain_miner][Config.settings['chain_defi'][chain_miner]['crypto']]
         immature_balance = ""
         if 'immature_balance' in miner_info:
             immature_balance = "*IMMATURE:* " + miner_info['immature_balance'] + "\n"
         unpaid_balance = "*UNPAID:* " + miner_info['unpaid_balance']
         estimated_earning = "*EST:* " + miner_info['estimated_earning']
-        total_earning = "*TOT CRYPTO*: " + str(balance_info['crypto'])
-        total_earning_euro = "*FIAT*: " + str(balance_info['fiat']) + " $"
-        pay_str = get_separator("PAYOUT") + immature_balance + unpaid_balance + " " + estimated_earning + "\n" + total_earning + " " + total_earning_euro + "\n"
+        # total_earning = "*TOT CRYPTO*: " + str(balance_info['crypto'])
+        # total_earning_euro = "*FIAT*: " + str(balance_info['fiat']) + " $"
+        pay_str = get_separator("PAYOUT") + immature_balance + unpaid_balance + " " + estimated_earning + "\n"  # + total_earning + " " + total_earning_euro + "\n"
         total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate']
         current_hashrate = "*C:* " + miner_info['current_hashrate']
         average_hashrate = "*A(6h):* " + miner_info['average_hashrate']

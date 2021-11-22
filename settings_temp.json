@@ -102,7 +102,12 @@
 		}
 	},
 	"wallet_defi": {
-		"nome wallet": "id wallet"
+		"nome wallet": {
+			"id": "id wallet",
+			"coins": {
+				"name": "address-chain"
+			}
+		}
 	},
 	"token_defi": [
 		{

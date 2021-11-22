@@ -168,7 +168,7 @@ def be_get_balance_defi(wallet):
     body = {
         "query": "\n        query($address: ID!, $noCache: Boolean) {\n          balance(address: $address, noCache: $noCache) {\n            network\n            balances {\n              ...balanceFields\n            }\n          }\n          lending(address: $address) {\n            data {\n              network\n              name\n              codename\n              shortname\n              url\n              logoURI\n              tvl\n              supplied {\n                ...tokenFields\n              }\n              borrowed {\n                ...tokenFields\n              }\n            }\n            failedPlatforms\n          }\n          earn(address: $address) {\n            data {\n              network\n              name\n              shortname\n              codename\n              requirePro\n              url\n              logoURI\n              tvl\n              pools {\n                name\n                logoURI\n                totalSupply\n                totalDeposited\n                currentAmount\n                pendingReward {\n                  ...balanceFields\n                }\n                underlyingTokens {\n                  ...underlyingTokenFields\n                }\n                dailyRewardPerWantedToken {\n                  ...balanceFields\n                }\n                transactions {\n                  ...transactionFields\n                }\n                aprs {\n                  name\n                  apr\n                }\n                avgLpCost {\n                  cost {\n                    token0\n                    token1\n                  }\n                  change {\n                    token0\n                    token1\n                  }\n                }\n                overallApy\n                pid\n                contractAddress\n                receiverContractAddresses\n                poolAddress\n              }\n            }\n            failedPlatforms\n          }\n        }\n\n        fragment tokenFields on LendingAsset {\n          address\n          suppliedAmount\n          borrowedAmount\n          underlyingAddress\n          borrowApy\n          supplyApy\n        }\n\n        fragment balanceFields on Balance {\n          address\n          quantity\n        }\n\n        fragment transactionFields on Transaction {\n          type\n          hash\n          amount\n          gasSpent\n          timestamp\n        }\n\n        fragment underlyingTokenFields on UnderlyingToken {\n          address\n          quantity\n          weight\n        }\n      ",
         "variables": {
-            "address": wallet,
+            "address": wallet['id'],
             "noCache": False
         }
     }
@@ -177,19 +177,23 @@ def be_get_balance_defi(wallet):
     balance = response['balance']
     to_ret = {"chain": {}, 'tot_usd_value': 0}
     for net in balance:
-        if net['network'] not in to_ret["chain"]:
-            to_ret["chain"][net['network']] = {}
-        res = make_request(Config.settings['chain_defi'][net['network']]['api_balance'] + wallet)
-        if res['state'] is True:
-            name = Config.settings['chain_defi'][net['network']]['crypto']
-            res_conv = make_request(
-                "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=USD&slug=" + Config.settings['binance']['symbols'][name + "BUSD"])
-            crypto_value = eval(Config.settings['chain_defi'][net['network']]['function_balance'])
-            to_ret["chain"][net['network']][name] = {
-                "crypto": round(crypto_value, 5),
-                "fiat": round(crypto_value * list(loads(res_conv['response'])['data'].values())[0]['quote']['USD']['price'], 2)
-            }
-            to_ret['tot_usd_value'] = to_ret['tot_usd_value'] + to_ret["chain"][net['network']][name]["fiat"]
+        coin_json = {}
+        for key, value in wallet['coins'].items():
+            if value.split("-")[1] == net['network']:
+                coin_json[value.split("-")[0]] = key
+        for cryp in net['balances']:
+            if cryp['address'] in coin_json.keys():
+                crypto_value = float(cryp['quantity'])
+                if crypto_value > 0:
+                    if net['network'] not in to_ret["chain"]:
+                        to_ret["chain"][net['network']] = {}
+                    name = coin_json[cryp['address']]
+                    res_conv = make_request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=USD&slug=" + Config.settings['binance']['symbols'][name + "BUSD"])
+                    to_ret["chain"][net['network']][name] = {
+                        "crypto": round(crypto_value, 5),
+                        "fiat": round(crypto_value * list(loads(res_conv['response'])['data'].values())[0]['quote']['USD']['price'], 2)
+                    }
+                    to_ret['tot_usd_value'] = to_ret['tot_usd_value'] + to_ret["chain"][net['network']][name]["fiat"]
     for plt in earn:
         if plt['network'] not in to_ret["chain"]:
             to_ret["chain"][plt['network']] = {}
