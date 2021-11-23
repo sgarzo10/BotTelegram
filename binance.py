@@ -31,7 +31,7 @@ def get_locked_savings_balance(asset, project_id):
 
 
 def get_open_orders():
-    f = open("binance/order-wallet.txt", "w")
+    f = open("order-wallet.txt", "w")
     f.write("")
     f.close()
     query_string = "timestamp=" + str(get_server_time())
@@ -40,7 +40,7 @@ def get_open_orders():
     order_list = []
     for order in orders:
         order_list.append([order['side'], order['symbol'], order['price'], order['origQty'], str(float(order['price']) * float(order['origQty']))])
-    f = open("binance/order-wallet.txt", "a")
+    f = open("order-wallet.txt", "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
 
@@ -82,7 +82,7 @@ def get_order_history():
             buy_sell_orders[key]['buy'] = {'medium': medium / qty_total, 'qty_total': qty_total}
         if qty_total_sell > 0:
             buy_sell_orders[key]['sell'] = {'medium': medium_sell / qty_total_sell, 'qty_total': qty_total_sell}
-    f = open("binance/order-wallet.txt", "a")
+    f = open("order-wallet.txt", "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
     return buy_sell_orders
@@ -99,7 +99,7 @@ def calculate_budget_coin(buy_sell_orders, key):
 
 
 def prepare_url_coinmarketcap(buy_sell_orders, coin):
-    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=" + coin + "&slug="
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=" + Config.settings["coinmarketcap"] + "&convert=" + coin + "&slug="
     for key in buy_sell_orders.keys():
         if Config.settings['binance']["symbols"][key][:2] != '0x':
             url += Config.settings['binance']["symbols"][key] + ","
@@ -111,7 +111,7 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     cry = {}
     to_ret = {}
     name = key.replace("BUSD", "")
-    if Config.settings['binance']["symbols"][key][:2] != '0x':
+    if key not in Config.settings['binance']["symbols"].keys() or Config.settings['binance']["symbols"][key][:2] != '0x':
         for cry in res_conv:
             if cry['symbol'] == name:
                 break
@@ -143,7 +143,7 @@ def prepare_output(output_data):
     legend(patch, [p['label'] for p in output_data['percs_wall']], loc="upper left", prop={'size': 9}, bbox_to_anchor=(0.0, 0.8), bbox_transform=fig2.transFigure)
     axis('equal')
     suptitle("\nTOTAL CRYPTO: " + str(round(output_data['total_balance'], 2)) + "$ - " + str(round(output_data['total_balance_crypto_eur'], 2)) + "€")
-    pdf = PdfPages("binance/wallet-allocation.pdf")
+    pdf = PdfPages("wallet-allocation.pdf")
     for fig in range(1, figure().number):
         pdf.savefig(fig)
     pdf.close()
@@ -152,7 +152,7 @@ def prepare_output(output_data):
     cla()
     close("all")
     head = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'ACTUAL', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
-    f = open("binance/order-wallet.txt", "a")
+    f = open("order-wallet.txt", "a")
     f.write(tabulate(output_data['assets_list'], headers=head, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL INVEST: " +
             str(round(output_data['total_total_invest'], 2)) + "$  TOTAL MARGIN: " + str(round(output_data['total_total_margin'], 2)) +
             "$   TOTAL BALANCE: " + str(round(output_data['total_balance'], 2)) + "$ - " + str(round(output_data['total_balance_crypto_eur'], 2)) +
@@ -164,7 +164,7 @@ def prepare_output(output_data):
         if asset[10] > 0:
             assets_list_tg.append([asset[0], asset[4], asset[6], asset[10], asset[13]])
     output_data['assets_list'].insert(0, head)
-    file = open('binance/assets.csv', 'w', newline='')
+    file = open('assets.csv', 'w', newline='')
     writer(file).writerows(output_data['assets_list'])
     file.close()
     return tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".4f")

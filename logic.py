@@ -13,12 +13,9 @@ from zipfile import ZipFile
 
 
 def be_youtube_download(canzoni):
-    url = "https://www.googleapis.com/youtube/v3/videos?key=AIzaSyDPijmcE2WD8TTrCrhNkf0dm6ScbWaP4YU&part=snippet&id=" + ','.join(c.split("watch?v=")[1] for c in canzoni.split("\n"))
-    resp = loads(make_request(url)['response'])
     makedirs("canzoni", exist_ok=True)
-    for item in resp['items']:
-        nome = item['snippet']['title']
-        link = "https://www.youtube.com/watch?v=" + item["id"]
+    for c in canzoni.split("\n"):
+        link = "https://www.youtube.com/watch?v=" + c.split("watch?v=")[1]
         try:
             YouTube(link).streams.filter(only_audio=True, subtype='mp4').first().download()
         except Exception as e:
@@ -26,7 +23,7 @@ def be_youtube_download(canzoni):
         try:
             for f in listdir("."):
                 if f.__contains__("mp4"):
-                    AudioSegment.from_file(f).export("canzoni/" + nome + ".mp3", format="mp3")
+                    AudioSegment.from_file(f).export('canzoni/' + f.replace(".mp4", "") + '.mp3', format="mp3")
                     remove(f)
         except Exception as e:
             exception(e)
@@ -222,7 +219,7 @@ def be_get_balance_defi(wallet):
                     if net['network'] not in to_ret["chain"]:
                         to_ret["chain"][net['network']] = {}
                     name = coin_json[cryp['address']]
-                    res_conv = make_request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=e06c6aea-b4a6-422d-9f76-6ac205a5eae1&convert=USD&slug=" + Config.settings['binance']['symbols'][name + "BUSD"])
+                    res_conv = make_request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=" + Config.settings["coinmarketcap"] + "&convert=USD&slug=" + Config.settings['binance']['symbols'][name + "BUSD"])
                     to_ret["chain"][net['network']][name] = {
                         "crypto": round(crypto_value, 5),
                         "fiat": round(crypto_value * list(loads(res_conv['response'])['data'].values())[0]['quote']['USD']['price'], 2)

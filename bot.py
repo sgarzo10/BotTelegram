@@ -6,6 +6,8 @@ from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_m
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
+from re import escape
+from os import remove
 
 commands = {
     "crypto": {
@@ -117,7 +119,7 @@ commands = {
     },
     "cross": {
         "icon": "Cross 🔮",
-        "row_size": 2,
+        "row_size": 3,
         "desc": "Funzioni cross",
         "commands": {
             "status_generali": {
@@ -163,9 +165,9 @@ def download_music(update, context):
     initial_log("download_music", context.args)
     if Config.download:
         Config.download = False
-        print(update.message.text)
         be_youtube_download(update.message.text)
-        update.message.reply_document(open('canzoni.zip', 'rb'))
+        update.message.reply_document(open('canzoni.zip', 'rb'), timeout=10000)
+        remove('canzoni.zip')
 
 
 def update_config(update, context):
@@ -213,6 +215,7 @@ def get_file_ovpn(update, context):
     response = be_get_file_ovpn()
     if response == "OK":
         update.message.reply_document(open('ovpn/client.ovpn', 'r'))
+        remove('ovpn/client.ovpn')
     else:
         update.message.reply_text(response)
 
@@ -235,8 +238,11 @@ def get_invest_status(update, context):
     get_open_orders()
     buy_sell_orders = get_order_history()
     update.message.reply_text(get_wallet(buy_sell_orders))
-    update.message.reply_document(open('binance/order-wallet.txt', 'r'))
-    update.message.reply_document(open('binance/wallet-allocation.pdf', 'rb'))
+    update.message.reply_document(open('order-wallet.txt', 'r'))
+    update.message.reply_document(open('wallet-allocation.pdf', 'rb'))
+    remove('order-wallet.txt')
+    remove('wallet-allocation.pdf')
+    remove('assets.csv')
 
 
 def get_balance_defi(update, context):
@@ -529,7 +535,7 @@ def main():
     upd.dispatcher.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
     upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
     upd.dispatcher.add_handler(MessageHandler(Filters.document, doc_handler))
-    upd.dispatcher.add_handler(MessageHandler(Filters.regex(r'^https://www.youtube.com/watch?v=') & Filters.user(username=set(value['users_abil'])), download_music))
+    upd.dispatcher.add_handler(MessageHandler(Filters.regex(r'^' + escape('https://www.youtube.com/watch?v=')) & Filters.user(username=set(value['users_abil'])), download_music))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)

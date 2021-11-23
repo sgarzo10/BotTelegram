@@ -130,5 +130,6 @@
 		"competizioni": {
 			"nome": "integer"
 		}
-	}
+	},
+	"coinmarketcap": "api key for coinmarketcap"
 }
