@@ -125,6 +125,7 @@ class Config:
 
     settings = {}
     update_conf = False
+    download = False
 
     @staticmethod
     def reload():

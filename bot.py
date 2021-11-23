@@ -2,7 +2,7 @@ from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_balance_defi, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_balance_defi, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
@@ -117,12 +117,16 @@ commands = {
     },
     "cross": {
         "icon": "Cross 🔮",
-        "row_size": 3,
+        "row_size": 2,
         "desc": "Funzioni cross",
         "commands": {
             "status_generali": {
                 "icon": "Generali 🔮",
                 "desc": "Recupera lo stato dell'investimetno in generali"
+            },
+            "download_youtube_music": {
+                "icon": "Download Music 🔮",
+                "desc": "Scarica canzoni da youtube (max 50 alla volta)"
             },
             "shutdown_system": {
                 "icon": "Shutdown 🔮",
@@ -147,6 +151,21 @@ commands = {
         }
     }
 }
+
+
+def download_youtube_music(update, context):
+    initial_log("download_youtube_music", context.args)
+    Config.download = True
+    update.message.reply_text("INVIARE LISTA CANZONI")
+
+
+def download_music(update, context):
+    initial_log("download_music", context.args)
+    if Config.download:
+        Config.download = False
+        print(update.message.text)
+        be_youtube_download(update.message.text)
+        update.message.reply_document(open('canzoni.zip', 'rb'))
 
 
 def update_config(update, context):
@@ -280,15 +299,11 @@ def get_mining_status(update, context):
             gpu_str = gpu_str + gpu_name + " " + gpu_usage + "\n" + intensity + " " + gpu_efficency + "\n" + reported_hashrate + " " + accepted_count + "\n"
             gpu_str = gpu_str + gpu_fan + " " + gpu_pow + " " + gpu_temp + "\n" + gpu_mem_used + " " + gpu_mem_free + "\n"
         miner_info = get_miner_info(trex_info['cur_trex_profile'], trex_info['wallet_id'])
-        # chain_miner = Config.settings['trex']['profiles'][trex_info['cur_trex_profile']]['crypto']
-        # balance_info = be_get_balance_defi(trex_info['wallet_id'])['chain'][chain_miner][Config.settings['chain_defi'][chain_miner]['crypto']]
         immature_balance = ""
         if 'immature_balance' in miner_info:
             immature_balance = "*IMMATURE:* " + miner_info['immature_balance'] + "\n"
         unpaid_balance = "*UNPAID:* " + miner_info['unpaid_balance']
         estimated_earning = "*EST:* " + miner_info['estimated_earning']
-        # total_earning = "*TOT CRYPTO*: " + str(balance_info['crypto'])
-        # total_earning_euro = "*FIAT*: " + str(balance_info['fiat']) + " $"
         pay_str = get_separator("PAYOUT") + immature_balance + unpaid_balance + " " + estimated_earning + "\n"  # + total_earning + " " + total_earning_euro + "\n"
         total_reported_hashrate = "*R:* " + trex_info['total_reported_hashrate']
         current_hashrate = "*C:* " + miner_info['current_hashrate']
@@ -498,6 +513,7 @@ def main():
         level=INFO)
     Config().reload()
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
+    value = {}
     users_list = []
     for key, value in Config.settings['function'].items():
         for usr in value['users_abil']:
@@ -513,6 +529,7 @@ def main():
     upd.dispatcher.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
     upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
     upd.dispatcher.add_handler(MessageHandler(Filters.document, doc_handler))
+    upd.dispatcher.add_handler(MessageHandler(Filters.regex(r'^https://www.youtube.com/watch?v=') & Filters.user(username=set(value['users_abil'])), download_music))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)

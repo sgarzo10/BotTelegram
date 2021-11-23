@@ -4,8 +4,41 @@ from meross_iot.api import MerossHttpClient
 from logging import exception
 from time import sleep
 from tabulate import tabulate
-from os import popen
+from os import listdir, remove, walk, path, makedirs, popen
+from shutil import rmtree
 from html import unescape
+from pytube import YouTube
+from pydub import AudioSegment
+from zipfile import ZipFile
+
+
+def be_youtube_download(canzoni):
+    url = "https://www.googleapis.com/youtube/v3/videos?key=AIzaSyDPijmcE2WD8TTrCrhNkf0dm6ScbWaP4YU&part=snippet&id=" + ','.join(c.split("watch?v=")[1] for c in canzoni.split("\n"))
+    resp = loads(make_request(url)['response'])
+    makedirs("canzoni", exist_ok=True)
+    for item in resp['items']:
+        nome = item['snippet']['title']
+        link = "https://www.youtube.com/watch?v=" + item["id"]
+        try:
+            YouTube(link).streams.filter(only_audio=True, subtype='mp4').first().download()
+        except Exception as e:
+            exception(e)
+        try:
+            for f in listdir("."):
+                if f.__contains__("mp4"):
+                    AudioSegment.from_file(f).export("canzoni/" + nome + ".mp3", format="mp3")
+                    remove(f)
+        except Exception as e:
+            exception(e)
+    try:
+        zip_file = ZipFile('canzoni.zip', 'w')
+        for folderName, subfolders, filenames in walk("canzoni"):
+            for filename in filenames:
+                zip_file.write(path.join(folderName, filename), path.basename(path.join(folderName, filename)))
+        zip_file.close()
+    except Exception as e:
+        exception(e)
+    rmtree("canzoni")
 
 
 def be_status_generali():
