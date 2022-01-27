@@ -1,0 +1,32 @@
+sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev libreadline6-dev libdb5.3-dev libgdbm-dev libsqlite3-dev libssl-dev libbz2-dev libexpat1-dev liblzma-dev zlib1g-dev libffi-dev
+wget https://www.python.org/ftp/python/3.9.0/Python-3.9.0.tar.xz
+tar xf Python-3.9.0.tar.xz
+cd Python-3.9.0
+./configure --enable-optimizations --prefix=/usr
+make
+sudo make altinstall
+cd ..
+sudo rm -r Python-3.9.0
+rm Python-3.9.0.tar.xz
+. ~/.bashrc
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1
+python -m pip install -r req.txt
+
+sudo mv sgarzobot.sh /etc/init.d/sgarzobot
+sudo chmod +x /etc/init.d/sgarzobot
+sudo systemctl enable sgarzobot
+sudo service sgarzobot start
+
+sudo apt-get install libcblas-dev
+sudo apt-get install libhdf5-dev
+sudo apt-get install libhdf5-serial-dev
+sudo apt-get install libatlas-base-dev
+sudo apt-get install libjasper-dev 
+sudo apt-get install libqtgui4 
+sudo apt-get install libqt4-test
+sudo apt-get install libilmbase-dev
+sudo apt-get install libopenexr-dev
+sudo apt-get install libgstreamer1.0-dev
+sudo apt-get install libavcodec-dev
+sudo apt-get install libavformat-dev
+sudo apt-get install libswscale-dev

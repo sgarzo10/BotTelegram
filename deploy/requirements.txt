@@ -1,0 +1,9 @@
+pyrogram
+python-telegram-bot
+tabulate
+matplotlib
+numpy
+pytube
+pydub
+selenium
+meross-iot==0.2.1.1

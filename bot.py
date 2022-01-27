@@ -514,7 +514,7 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 
 def main():
     basicConfig(
-        filename=None,  # "bot.log",
+        filename="bot.log",  # "bot.log",
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
     Config().reload()

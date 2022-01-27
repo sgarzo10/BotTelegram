@@ -12,3 +12,4 @@
 /bot.spec
 /settings.json
 .DS_Store
+/bot.log
