@@ -5,6 +5,7 @@ from hashlib import sha256
 from tabulate import tabulate
 from csv import writer
 from logic import be_get_token_defi_value
+from matplotlib import use
 from matplotlib.pyplot import pie, legend, suptitle, axis, figure, close, cla
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import array
@@ -136,13 +137,13 @@ def prepare_output(output_data):
     patch, text = pie(array([p['perc'] for p in output_data['percs_wall_eur']]))
     legend(patch, [p['label'] for p in output_data['percs_wall_eur']], loc="upper left", prop={'size': 12}, bbox_to_anchor=(0.0, 0.65), bbox_transform=fig1.transFigure)
     axis('equal')
-    suptitle(f"\nDEPOSIT: {round(output_data['total_deposit_eur'], 2)}€    NOW: {round(output_data['total_eur'], 2)}€    GAIN: {gain}€ ({gain_perc}%)")
+    suptitle(f"\nDEPOSIT: {round(output_data['total_deposit_eur'], 2)}€    NOW: {round(output_data['total_eur'], 2)}€    GAIN: {gain}€ ({gain_perc}%)\n")
     fig2 = figure(figsize=(7, 5))
     fig2.subplots_adjust(0.3, 0, 1, 0.9)
     patch, text = pie(array([p['perc'] for p in output_data['percs_wall']]))
-    legend(patch, [p['label'] for p in output_data['percs_wall']], loc="upper left", prop={'size': 9}, bbox_to_anchor=(0.0, 0.8), bbox_transform=fig2.transFigure)
+    legend(patch, [p['label'] for p in output_data['percs_wall']], loc="upper left", prop={'size': 9}, bbox_to_anchor=(0.0, 0.9), bbox_transform=fig2.transFigure)
     axis('equal')
-    suptitle("\nTOTAL CRYPTO: " + str(round(output_data['total_balance'], 2)) + "$ - " + str(round(output_data['total_balance_crypto_eur'], 2)) + "€")
+    suptitle(f"\nTOTAL INVEST CRYPTO: {round(output_data['total_total_invest_eur'], 2)}€  - TOTAL CRYPTO: {str(round(output_data['total_balance_crypto_eur'], 2))}€")
     pdf = PdfPages("wallet-allocation.pdf")
     for fig in range(1, figure().number):
         pdf.savefig(fig)
@@ -151,28 +152,37 @@ def prepare_output(output_data):
     fig2.clear()
     cla()
     close("all")
-    head = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'ACTUAL', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
+    head_asset_list = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'SELL NOW']
+    head_actual_list = ['ASSET', 'ACT INVEST', 'REAL AVG BUY',  'ACT AVG BUY', 'ACT PRICE', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
     f = open("order-wallet.txt", "a")
-    f.write(tabulate(output_data['assets_list'], headers=head, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" + "TOTAL INVEST: " +
-            str(round(output_data['total_total_invest'], 2)) + "$  TOTAL MARGIN: " + str(round(output_data['total_total_margin'], 2)) +
-            "$   TOTAL BALANCE: " + str(round(output_data['total_balance'], 2)) + "$ - " + str(round(output_data['total_balance_crypto_eur'], 2)) +
-            "€\n\nTOTAL STABLECOIN: " + str(round(output_data['total_balance_stable'], 2)) + "$ - " + str(round(output_data['total_balance_stable_eur'], 2)) +
-            "€\n\nTOTAL DEPOSIT: " + str(round(output_data['total_deposit_eur'], 2)) + "€   TOTAL BALANCE: " + str(round(output_data['total_balance_eur'], 2)) + "€   TOTAL: " + str(round(output_data['total_eur'], 2)) + "€")
+    f.write(tabulate(output_data['assets_list'], headers=head_asset_list, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +
+            tabulate(output_data['actual_list'], headers=head_actual_list, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +
+            "TOTAL CRYPTO INVEST: " + str(round(output_data['total_total_invest_eur'], 2)) + "€ - " + str(round(output_data['total_total_invest'], 2)) + "$\n\n" +
+            "TOTAL CRYPTO MARGIN: " + str(round(output_data['total_total_margin_eur'], 2)) + "€ - " + str(round(output_data['total_total_margin'], 2)) + "$\n\n" +
+            "TOTAL CRYPTO BALANCE: " + str(round(output_data['total_balance_crypto_eur'], 2)) + "€ - " + str(round(output_data['total_balance'], 2)) + "$\n\n" +
+            "TOTAL STABLECOIN: " + str(round(output_data['total_balance_stable_eur'], 2)) + "€ - " + str(round(output_data['total_balance_stable'], 2)) + "$\n\n" +
+            "TOTAL EUR DEPOSIT: " + str(round(output_data['total_deposit_eur'], 2)) + "€\n\n" +
+            "TOTAL EUR BALANCE: " + str(round(output_data['total_balance_eur'], 2)) + "€\n\n" +
+            "TOTAL EUR IF SELL AL NOW: " + str(round(output_data['total_eur'], 2)) + "€\n\n" +
+            "TOTAL EUR MARGIN: " + str(gain) + "€\n")
     f.close()
     assets_list_tg = []
-    for asset in output_data['assets_list']:
-        if asset[10] > 0:
-            assets_list_tg.append([asset[0], asset[4], asset[6], asset[10], asset[13]])
-    output_data['assets_list'].insert(0, head)
+    for asset in output_data['actual_list']:
+        if asset[5] > 0:
+            assets_list_tg.append([asset[0], asset[3], asset[4], asset[5], asset[8]])
+    '''
+    output_data['assets_list'].insert(0, head_asset_list)
     file = open('assets.csv', 'w', newline='')
     writer(file).writerows(output_data['assets_list'])
     file.close()
+    '''
     return tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".4f")
 
 
 def get_wallet(buy_sell_orders):
     output_data = {
         'assets_list': [],
+        'actual_list': [],
         'percs_wall': [],
         'percs_wall_eur': [],
         'total_total_invest': 0,
@@ -205,15 +215,26 @@ def get_wallet(buy_sell_orders):
             final_margin = actual_margin + total_margin
         else:
             final_margin = actual_margin + total_margin + ((actual_budget['mining'] - sell_mining) * value_and_ath['actual_value'])
-        output_data['total_total_invest'] += total_invest - total_return
+        my_actual_mid_buy = 0
+        real_actual_mid_buy = 0
+        my_actual_invest = 0
         output_data['total_total_margin'] += final_margin
-        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], value_and_ath['actual_value'], total_invest, total_return, total_margin, actual_budget['budget'], sell_now, actual_margin, final_margin])
+        if actual_budget['budget'] > 0:
+            if total_invest - total_return > 0:
+                my_actual_invest = total_invest - total_return
+                my_actual_mid_buy = my_actual_invest / actual_budget['budget']
+                real_actual_mid_buy = my_actual_invest / (actual_budget['budget'] - actual_budget['mining'])
+                output_data['total_total_invest'] += my_actual_invest
+            output_data['actual_list'].append([key.replace("BUSD", ""), my_actual_invest, real_actual_mid_buy, my_actual_mid_buy, value_and_ath['actual_value'], actual_budget['budget'], sell_now, actual_margin, final_margin])
+        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], total_invest, total_return, total_margin, sell_now])
     i = 0
     while i < len(output_data['percs_wall']):
         output_data['percs_wall'][i]['perc'] = (output_data['percs_wall'][i]['perc'] * 100) / output_data['total_balance']
         output_data['percs_wall'][i]['label'] += f"({round(output_data['percs_wall'][i]['perc'], 2)}%)"
         i += 1
     eur_value = get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
+    output_data['total_total_margin_eur'] = output_data['total_total_margin'] / eur_value
+    output_data['total_total_invest_eur'] = output_data['total_total_invest'] / eur_value
     output_data['total_balance_stable'] = sum(Config.settings["binance"]["stablecoin"]["USD"])
     output_data['total_balance_crypto_eur'] = output_data['total_balance'] / eur_value
     output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / eur_value
@@ -227,7 +248,9 @@ def get_wallet(buy_sell_orders):
     while i < len(output_data['percs_wall_eur']):
         output_data['percs_wall_eur'][i]['label'] = output_data['percs_wall_eur'][i]['label'].replace("perc", f"({round(output_data['percs_wall_eur'][i]['perc'], 2)}%)")
         i += 1
-    output_data['assets_list'].sort(key=lambda x: x[11], reverse=True)
+    output_data['assets_list'].sort(key=lambda x: x[9], reverse=True)
+    output_data['actual_list'].sort(key=lambda x: x[6], reverse=True)
     output_data['percs_wall'].sort(key=lambda x: x['perc'], reverse=True)
     output_data['percs_wall_eur'].sort(key=lambda x: x['perc'], reverse=True)
+    use('Agg')
     return prepare_output(output_data)

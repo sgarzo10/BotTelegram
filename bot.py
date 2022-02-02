@@ -242,7 +242,7 @@ def get_invest_status(update, context):
     update.message.reply_document(open('wallet-allocation.pdf', 'rb'))
     remove('order-wallet.txt')
     remove('wallet-allocation.pdf')
-    remove('assets.csv')
+    # remove('assets.csv')
 
 
 def get_balance_defi(update, context):
@@ -514,7 +514,7 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 
 def main():
     basicConfig(
-        filename="bot.log",  # "bot.log",
+        filename=None,  # "bot.log",
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
     Config().reload()
