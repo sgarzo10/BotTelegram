@@ -129,6 +129,6 @@ class Config:
 
     @staticmethod
     def reload():
-        f = open("settings.json")
+        f = open("../config/settings.json")
         Config.settings = load(f)
         f.close()

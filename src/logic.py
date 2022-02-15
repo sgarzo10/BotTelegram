@@ -344,7 +344,7 @@ def find_trex_profile(pool_url, wallet_id):
 
 def be_set_trex_profile(profile):
     try:
-        f = open('trex/config_temp.json', 'r')
+        f = open(Config.settings['trex']['path_config_temp'], 'r')
         data_file = f.read()
         f.close()
         trex_profile = Config.settings['trex']['profiles'][profile]
@@ -365,7 +365,7 @@ def be_set_trex_profile(profile):
         data_file = data_file.replace("WALLET_ID", trex_profile['wallet'])
         data_file = data_file.replace("INTENSITA", str(trex_profile['intensity'])[1:-1])
         data_file = data_file.replace("WORKER_NAME", Config.settings['trex']['worker_name'])
-        f = open('trex/config.json', 'w')
+        f = open(Config.settings['trex']['path_config'], 'w')
         f.write(data_file)
         f.close()
         ret_str = "SETTATO PROFILO: %s" % profile
@@ -431,13 +431,13 @@ def be_get_public_ip():
 
 def be_get_file_ovpn():
     try:
-        f = open('ovpn/client_temp.ovpn', 'r')
+        f = open(Config.settings['vpn']['path_client_temp'], 'r')
         data_file = f.read()
         f.close()
         response = be_get_public_ip()
         if response.find("ERRORE") == -1:
             data_file = data_file.replace("IPADDRESS", response)
-            f = open('ovpn/client.ovpn', 'w')
+            f = open('client.ovpn', 'w')
             f.write(data_file)
             f.close()
             response = "OK"
@@ -465,15 +465,16 @@ def be_start_access_point():
     if response['cmd_err'] == "":
         response = make_cmd("netsh interface ip set address \"" + Config.settings['access_point']['interface_name'] + "\" static " + Config.settings['access_point']['ip'] + " 255.255.255.0")
         if response['cmd_err'] == "":
-            f = open("dhcp/dhcpsrv_temp.ini", "r")
+            f = open(Config.settings['access_point']['path_ini_temp'], "r")
             data_file = f.read()
             f.close()
             data_file = data_file.replace("SERVER_IP", Config.settings['access_point']['ip'])
-            f = open('dhcp/dhcpsrv.ini', 'w')
+            f = open(Config.settings['access_point']['path_ini'], 'w')
             f.write(data_file)
             f.close()
-            make_cmd("\"dhcp/dhcpsrv.exe\" -configfirewall")
-            make_cmd("start /d dhcp dhcpsrv.exe -runapp", sys=True)
+            make_cmd("\"dhcpsrv.exe\" -configfirewall")
+            make_cmd("\"dhcpsrv.exe\" -ini " + Config.settings['access_point']['path_ini'])
+            make_cmd("start dhcpsrv.exe -runapp", sys=True)
             ret_str = "ACCESS POINT AVVIATO"
         else:
             ret_str = "ERRORE: " + response["cmd_err"]

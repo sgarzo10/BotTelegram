@@ -3,7 +3,6 @@ from json import loads
 from hmac import new
 from hashlib import sha256
 from tabulate import tabulate
-from csv import writer
 from logic import be_get_token_defi_value
 from matplotlib import use
 from matplotlib.pyplot import pie, legend, suptitle, axis, figure, close, cla
@@ -170,12 +169,6 @@ def prepare_output(output_data):
     for asset in output_data['actual_list']:
         if asset[5] > 0:
             assets_list_tg.append([asset[0], asset[3], asset[4], asset[5], asset[8]])
-    '''
-    output_data['assets_list'].insert(0, head_asset_list)
-    file = open('assets.csv', 'w', newline='')
-    writer(file).writerows(output_data['assets_list'])
-    file.close()
-    '''
     return tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".4f")
 
 

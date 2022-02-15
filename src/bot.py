@@ -181,7 +181,7 @@ def doc_handler(update, context):
     if update.message.document.file_name == "settings.json" and update.message.document.mime_type == "application/json":
         if Config.update_conf:
             f = context.bot.getFile(update.message.document.file_id)
-            f.download("settings.json")
+            f.download("../config/settings.json")
             Config.update_conf = False
             to_ret = "FILE DI CONFIGURAZIONE AGGIORNATO!"
         else:
@@ -197,7 +197,7 @@ def reload_config(update, context):
 
 def get_config(update, context):
     initial_log("get_config", context.args)
-    update.message.reply_document(open('settings.json', 'r'))
+    update.message.reply_document(open('../config/settings.json', 'r'))
 
 
 def status_generali(update, context):
@@ -214,8 +214,8 @@ def get_file_ovpn(update, context):
     initial_log("get_file_ovpn", context.args)
     response = be_get_file_ovpn()
     if response == "OK":
-        update.message.reply_document(open('ovpn/client.ovpn', 'r'))
-        remove('ovpn/client.ovpn')
+        update.message.reply_document(open('client.ovpn', 'r'))
+        remove('client.ovpn')
     else:
         update.message.reply_text(response)
 
@@ -242,7 +242,6 @@ def get_invest_status(update, context):
     update.message.reply_document(open('wallet-allocation.pdf', 'rb'))
     remove('order-wallet.txt')
     remove('wallet-allocation.pdf')
-    # remove('assets.csv')
 
 
 def get_balance_defi(update, context):
@@ -392,7 +391,7 @@ def get_trex_profiles(update, context):
 
 def start_miner(update, context):
     initial_log("start_miner", context.args)
-    make_cmd("start /d trex t-rex.exe -c config.json", sys=True)
+    make_cmd(f"start t-rex.exe -c {Config.settings['trex']['path_config']}", sys=True)
     update.message.reply_text("MINER ATTIVATO")
 
 
@@ -513,11 +512,11 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 
 
 def main():
+    Config().reload()
     basicConfig(
-        filename=None,  # "bot.log",
+        filename=Config.settings['log']['path_file'],
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
-    Config().reload()
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
     value = {}
     users_list = []
