@@ -8,7 +8,7 @@
 /src/trex.exe
 /src/dist/*
 /src/build/*
-/my_account.session
+/src/my_account.session
 /bot.spec
 .DS_Store
-/log/bot.log
+/log/*
