@@ -513,7 +513,7 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 def main():
     Config().reload()
     basicConfig(
-        filename=None,#Config.settings['log']['path_file'],
+        filename=Config.settings['log']['path_file'],
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
