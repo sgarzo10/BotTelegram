@@ -55,7 +55,7 @@ def be_status_generali():
     tot_invest = 0
     sell_all = 0
     assets_list = []
-    for key, value in Config.settings["generali"]['investimenti'].items():
+    for key, value in Config.generali['investimenti'].items():
         qty_total = 0
         invst_total = 0
         for o in value:
@@ -72,40 +72,41 @@ def be_status_generali():
         tot_invest += invst_total
         sell_all += sell
         assets_list.append([k, round(qty_total, 2), medium_buy, generali_now[k], round(invst_total, 2), sell, profit])
-    rel_tot_invest = round(tot_invest * 2 + sum(Config.settings["generali"]['fee']), 2)
+    rel_tot_invest = round(tot_invest * 2 + sum(Config.generali['fee']), 2)
     balance = round(tot_invest + sell_all, 2)
-    margin = round(tot_profit - sum(Config.settings["generali"]['fee']), 2)
+    margin = round(tot_profit - sum(Config.generali['fee']), 2)
     return tabulate(assets_list, headers=['FONDO', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'TOT INVEST', 'SELL NOW', 'MARGIN'], tablefmt='orgtbl', floatfmt=".2f") + "\n\nTOTAL BALANCE: " + str(balance) + "   TOTAL INVEST: " + str(rel_tot_invest) + "   TOTAL MARGIN: " + str(margin)
 
 
-def be_get_apy_defi(platforms):
-    drivers = []
-    token_list = []
-    try:
-        for plt in platforms:
-            drivers.append(make_driver_selenium(plt['url'], driver_or_page=False))
-        sleep(7)
-        i = 0
-        for plt in platforms:
-            token_list.append([plt['url'], eval(plt['apy'])])
-            i += 1
-        to_ret = tabulate(token_list, headers=['PLATFORM', 'APY'], tablefmt='orgtbl', floatfmt=".3f")
-    except Exception as e:
-        exception(e)
-        to_ret = str(e)
-    finally:
-        for d in drivers:
-            d.quit()
-    return to_ret
-
-
-def be_get_token_defi_value(tokens):
+def be_get_token_defi_value(tokens_chain):
     to_ret = {}
-    for tk in tokens:
-        payload = loads(make_request(Config.settings["chain_defi"][tk['chain']]['url'] + tk['addr'])['response'])['data']
-        if isinstance(payload, list):
-            payload = payload[0]
-        to_ret[tk['token']] = round(float(payload[Config.settings["chain_defi"][tk['chain']]['key']]), 5)
+    to_ret_tmp = {}
+    order = ''
+    if 'order' in tokens_chain:
+        order = tokens_chain['order']
+        del tokens_chain['order']
+    for key, value in tokens_chain.items():
+        tool = Config.settings[Config.chain[key]['token_price']]
+        base_url = tool['url_token_price']\
+            .replace("{chain_id}", Config.chain[key]['chain_id'])\
+            .replace("{chiave}", tool['key'])
+        if tool['multi_token']:
+            payload = loads(make_request(base_url + ','.join(x for x in value.keys()))['response'])['data']
+            key_sort = list(value.keys())
+            key_sort.sort(reverse=True)
+            i = 0
+            for p in payload:
+                to_ret_tmp[value[key_sort[i]]] = round(float(p[tool['key_token_price']]), 5)
+                i += 1
+        else:
+            for tk_key, tk_value in value.items():
+                payload = loads(make_request(base_url + tk_key)['response'])['data']
+                to_ret_tmp[tk_value] = round(float(payload[tool['key_token_price']]), 5)
+    if order != '':
+        for k in order:
+            to_ret[k] = to_ret_tmp[k]
+    else:
+        to_ret = to_ret_tmp
     return to_ret
 
 
@@ -194,58 +195,6 @@ def get_trex_info():
     return trex_info
 
 
-def be_get_balance_defi(wallet):
-    body = {
-        "query": "\n        query($address: ID!, $noCache: Boolean) {\n          balance(address: $address, noCache: $noCache) {\n            network\n            balances {\n              ...balanceFields\n            }\n          }\n          lending(address: $address) {\n            data {\n              network\n              name\n              codename\n              shortname\n              url\n              logoURI\n              tvl\n              supplied {\n                ...tokenFields\n              }\n              borrowed {\n                ...tokenFields\n              }\n            }\n            failedPlatforms\n          }\n          earn(address: $address) {\n            data {\n              network\n              name\n              shortname\n              codename\n              requirePro\n              url\n              logoURI\n              tvl\n              pools {\n                name\n                logoURI\n                totalSupply\n                totalDeposited\n                currentAmount\n                pendingReward {\n                  ...balanceFields\n                }\n                underlyingTokens {\n                  ...underlyingTokenFields\n                }\n                dailyRewardPerWantedToken {\n                  ...balanceFields\n                }\n                transactions {\n                  ...transactionFields\n                }\n                aprs {\n                  name\n                  apr\n                }\n                avgLpCost {\n                  cost {\n                    token0\n                    token1\n                  }\n                  change {\n                    token0\n                    token1\n                  }\n                }\n                overallApy\n                pid\n                contractAddress\n                receiverContractAddresses\n                poolAddress\n              }\n            }\n            failedPlatforms\n          }\n        }\n\n        fragment tokenFields on LendingAsset {\n          address\n          suppliedAmount\n          borrowedAmount\n          underlyingAddress\n          borrowApy\n          supplyApy\n        }\n\n        fragment balanceFields on Balance {\n          address\n          quantity\n        }\n\n        fragment transactionFields on Transaction {\n          type\n          hash\n          amount\n          gasSpent\n          timestamp\n        }\n\n        fragment underlyingTokenFields on UnderlyingToken {\n          address\n          quantity\n          weight\n        }\n      ",
-        "variables": {
-            "address": wallet['id'],
-            "noCache": False
-        }
-    }
-    response = loads(make_request("https://api-sg.growingfi.com/v3/gql", body=body)['response'])['data']
-    earn = response['earn']['data']
-    balance = response['balance']
-    to_ret = {"chain": {}, 'tot_usd_value': 0}
-    for net in balance:
-        coin_json = {}
-        for key, value in wallet['coins'].items():
-            if value.split("-")[1] == net['network']:
-                coin_json[value.split("-")[0]] = key
-        for cryp in net['balances']:
-            if cryp['address'] in coin_json.keys():
-                crypto_value = float(cryp['quantity'])
-                if crypto_value > 0:
-                    crypto_value /= pow(10, Config.settings['chain_defi'][net['network']]['pow_divisor'])
-                    if net['network'] not in to_ret["chain"]:
-                        to_ret["chain"][net['network']] = {}
-                    name = coin_json[cryp['address']]
-                    res_conv = make_request("https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=" + Config.settings["coinmarketcap"] + "&convert=USD&slug=" + Config.settings['binance']['symbols'][name + "BUSD"])
-                    to_ret["chain"][net['network']][name] = {
-                        "crypto": round(crypto_value, 5),
-                        "fiat": round(crypto_value * list(loads(res_conv['response'])['data'].values())[0]['quote']['USD']['price'], 2)
-                    }
-                    to_ret['tot_usd_value'] = to_ret['tot_usd_value'] + to_ret["chain"][net['network']][name]["fiat"]
-    for plt in earn:
-        if plt['network'] not in to_ret["chain"]:
-            to_ret["chain"][plt['network']] = {}
-        for pool in plt['pools']:
-            name = ""
-            if pool['pendingReward'] is not None:
-                tot = float(plt['pools'][0]['currentAmount']) + float(pool['pendingReward'][0]['quantity']) / pow(10, 18)
-            else:
-                tot = float(pool['currentAmount'])
-            for tk in Config.settings['token_defi']:
-                if tk['addr'].upper() == pool['underlyingTokens'][0]['address'].upper():
-                    name = tk['token']
-            fiat_value = be_get_token_defi_value([{"token": name, "addr": pool['underlyingTokens'][0]['address'], "chain": plt['network']}])[name]
-            to_ret["chain"][plt['network']][name] = {
-                "crypto": round(tot, 5),
-                "fiat": round(tot * fiat_value, 2)
-            }
-            to_ret['tot_usd_value'] = to_ret['tot_usd_value'] + to_ret["chain"][plt['network']][name]["fiat"]
-    return to_ret
-
-
 def get_miner_info(cur_trex_profile, wallet_id):
     if Config.settings['trex']['profiles'][cur_trex_profile]['api_domain'].find("2miners") != -1:
         to_ret = get_2miners_info(cur_trex_profile, wallet_id)
@@ -268,7 +217,7 @@ def calculate_avg_hasrate(current_time, stats, time_key, hashrate_key):
 def get_ethermine_info(cur_trex_profile, wallet_id):
     ethermine_info = {}
     trex_profile = Config.settings['trex']['profiles'][cur_trex_profile]
-    crypto = Config.settings['chain_defi'][trex_profile['crypto']]
+    crypto = Config.chain[trex_profile['crypto']]
     response_dash = make_request(trex_profile['api_domain'] + "/miner/" + wallet_id + "/dashboard")
     response_pay = make_request(trex_profile['api_domain'] + "/miner/" + wallet_id + "/dashboard/payouts")
     if response_dash['state'] is True and response_pay['state'] is True:
@@ -290,7 +239,7 @@ def get_ethermine_info(cur_trex_profile, wallet_id):
 def get_2miners_info(cur_trex_profile, wallet_id):
     two_miners_info = {}
     trex_profile = Config.settings['trex']['profiles'][cur_trex_profile]
-    crypto = Config.settings['chain_defi'][trex_profile['crypto']]
+    crypto = Config.chain[trex_profile['crypto']]
     response_dash = make_request(trex_profile['api_domain'] + "/" + wallet_id)
     if response_dash['state'] is True:
         dashboard = loads(response_dash['response'])
@@ -323,7 +272,7 @@ def get_meross_info():
 
 
 def be_stop_miner():
-    response = make_request("http://127.0.0.1:4067/control?command=shutdown")
+    response = make_request(Config.settings['trex']['shutdown_url'])
     if response['state'] is True:
         if loads(response['response'])['success'] == 1:
             ret_str = "SPENTO MINER"
@@ -355,7 +304,7 @@ def be_set_trex_profile(profile):
             dev_string = dev_string + str(i) + ", "
         zero_string = zero_string[:-2]
         dev_string = dev_string[:-2]
-        crypto = Config.settings['chain_defi'][trex_profile['crypto']]
+        crypto = Config.chain[trex_profile['crypto']]
         data_file = data_file.replace("BUILD_MODE", zero_string)
         data_file = data_file.replace("DEVICES_ID", dev_string)
         data_file = data_file.replace("KERNEL_LIST", zero_string)
@@ -429,7 +378,7 @@ def be_get_public_ip():
     return ret_str
 
 
-def be_get_file_ovpn():
+def be_get_file_ovpn(filename):
     try:
         f = open(Config.settings['vpn']['path_client_temp'], 'r')
         data_file = f.read()
@@ -437,7 +386,7 @@ def be_get_file_ovpn():
         response = be_get_public_ip()
         if response.find("ERRORE") == -1:
             data_file = data_file.replace("IPADDRESS", response)
-            f = open('client.ovpn', 'w')
+            f = open(filename, 'w')
             f.write(data_file)
             f.close()
             response = "OK"

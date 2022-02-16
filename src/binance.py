@@ -30,8 +30,8 @@ def get_locked_savings_balance(asset, project_id):
     return loads(make_request("https://api.binance.com/sapi/v1/lending/project/position/list?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
 
 
-def get_open_orders():
-    f = open("order-wallet.txt", "w")
+def get_open_orders(filename):
+    f = open(filename, "w")
     f.write("")
     f.close()
     query_string = "timestamp=" + str(get_server_time())
@@ -40,12 +40,12 @@ def get_open_orders():
     order_list = []
     for order in orders:
         order_list.append([order['side'], order['symbol'], order['price'], order['origQty'], str(float(order['price']) * float(order['origQty']))])
-    f = open("order-wallet.txt", "a")
+    f = open(filename, "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
 
 
-def get_order_history():
+def get_order_history(filename):
     order_list = []
     buy_sell_orders = {}
     for key in Config.settings['binance']['symbols'].keys():
@@ -55,8 +55,8 @@ def get_order_history():
         if resp['state'] is True:
             orders = loads(resp['response'])
         medium, qty_total, medium_sell, qty_total_sell = 0, 0, 0, 0
-        if key in Config.settings['binance']["orders"]:
-            for order in Config.settings['binance']["orders"][key]:
+        if key in Config.orders:
+            for order in Config.orders[key]:
                 if order['type'] == 'BUY':
                     qty_total += order['amount']
                     medium += order['amount'] * order['value']
@@ -82,7 +82,7 @@ def get_order_history():
             buy_sell_orders[key]['buy'] = {'medium': medium / qty_total, 'qty_total': qty_total}
         if qty_total_sell > 0:
             buy_sell_orders[key]['sell'] = {'medium': medium_sell / qty_total_sell, 'qty_total': qty_total_sell}
-    f = open("order-wallet.txt", "a")
+    f = open(filename, "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
     return buy_sell_orders
@@ -99,7 +99,7 @@ def calculate_budget_coin(buy_sell_orders, key):
 
 
 def prepare_url_coinmarketcap(buy_sell_orders, coin):
-    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?CMC_PRO_API_KEY=" + Config.settings["coinmarketcap"] + "&convert=" + coin + "&slug="
+    url = f'{Config.settings["coinmarketcap"]["price_url"]}{Config.settings["coinmarketcap"]["key"]}&convert={coin}&slug='
     for key in buy_sell_orders.keys():
         if Config.settings['binance']["symbols"][key][:2] != '0x':
             url += Config.settings['binance']["symbols"][key] + ","
@@ -122,13 +122,13 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     else:
         addr = Config.settings['binance']["symbols"][key].split("-")[0]
         chain = Config.settings['binance']["symbols"][key].split("-")[1]
-        to_ret['actual_value'] = be_get_token_defi_value([{"token": name, "addr": addr, "chain": chain}])[name]
+        to_ret['actual_value'] = be_get_token_defi_value({chain: {addr: name}})[name]
         if ath:
             to_ret['ath'] = 'N.D.'
     return to_ret
 
 
-def prepare_output(output_data):
+def prepare_output(output_data, file_name_order, file_name_pdf):
     gain = round(output_data['total_eur'] - output_data['total_deposit_eur'], 2)
     gain_perc = round(gain / output_data['total_deposit_eur'] * 100, 2)
     fig1 = figure(figsize=(7, 5))
@@ -143,7 +143,7 @@ def prepare_output(output_data):
     legend(patch, [p['label'] for p in output_data['percs_wall']], loc="upper left", prop={'size': 9}, bbox_to_anchor=(0.0, 0.9), bbox_transform=fig2.transFigure)
     axis('equal')
     suptitle(f"\nTOTAL INVEST CRYPTO: {round(output_data['total_total_invest_eur'], 2)}€  - TOTAL CRYPTO: {str(round(output_data['total_balance_crypto_eur'], 2))}€")
-    pdf = PdfPages("wallet-allocation.pdf")
+    pdf = PdfPages(file_name_pdf)
     for fig in range(1, figure().number):
         pdf.savefig(fig)
     pdf.close()
@@ -153,7 +153,7 @@ def prepare_output(output_data):
     close("all")
     head_asset_list = ['ASSET', 'MINED/FEE', 'TOT BUY', 'TOT SELL', 'AVG BUY', 'AVG SELL', 'TOT INVEST', 'TOT RETURN', 'TOT MARGIN', 'SELL NOW']
     head_actual_list = ['ASSET', 'ACT INVEST', 'REAL AVG BUY',  'ACT AVG BUY', 'ACT PRICE', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
-    f = open("order-wallet.txt", "a")
+    f = open(file_name_order, "a")
     f.write(tabulate(output_data['assets_list'], headers=head_asset_list, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +
             tabulate(output_data['actual_list'], headers=head_actual_list, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +
             "TOTAL CRYPTO INVEST: " + str(round(output_data['total_total_invest_eur'], 2)) + "€ - " + str(round(output_data['total_total_invest'], 2)) + "$\n\n" +
@@ -172,7 +172,7 @@ def prepare_output(output_data):
     return tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".4f")
 
 
-def get_wallet(buy_sell_orders):
+def get_wallet(buy_sell_orders, file_name_order, file_name_pdf):
     output_data = {
         'assets_list': [],
         'actual_list': [],
@@ -246,4 +246,4 @@ def get_wallet(buy_sell_orders):
     output_data['percs_wall'].sort(key=lambda x: x['perc'], reverse=True)
     output_data['percs_wall_eur'].sort(key=lambda x: x['perc'], reverse=True)
     use('Agg')
-    return prepare_output(output_data)
+    return prepare_output(output_data, file_name_order, file_name_pdf)

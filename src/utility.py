@@ -121,14 +121,30 @@ def make_button_list(string_list, string_callback):
     return InlineKeyboardMarkup(button_list)
 
 
+def read_file(file_path, json=True):
+    f = open(file_path)
+    if json:
+        ctx = load(f)
+    else:
+        ctx = f.read()
+    f.close()
+    return ctx
+
+
 class Config:
 
     settings = {}
+    orders = {}
+    chain = {}
+    token = {}
+    generali = {}
     update_conf = False
     download = False
 
     @staticmethod
     def reload():
-        f = open("../config/settings.json")
-        Config.settings = load(f)
-        f.close()
+        Config.settings = read_file("../config/settings.json")
+        Config.orders = read_file("../config/order.json")
+        Config.chain = read_file("../config/chain.json")
+        Config.token = read_file("../config/token.json")
+        Config.generali = read_file("../config/generali.json")

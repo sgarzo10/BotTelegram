@@ -1,6 +1,9 @@
 /.idea/*
 /__pycache__/*
 /config/trex_config.json
+/config/generali.json
+/config/order.json
+/config/chain.json
 /config/dhcpsrv.ini
 /config/settings.json
 /src/__pycache__/*

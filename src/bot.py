@@ -2,7 +2,7 @@ from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_balance_defi, be_get_apy_defi, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
@@ -12,7 +12,7 @@ from os import remove
 commands = {
     "crypto": {
         "icon": 'Crypto 💰',
-        "row_size": 2,
+        "row_size": 3,
         "desc": "Funzioni crypto",
         "commands": {
             "get_invest_status": {
@@ -26,10 +26,6 @@ commands = {
             "get_value_token_defi": {
                 "icon": "Token DeFi 💰",
                 "desc": "Recupera il valore dei token DeFi",
-            },
-            "get_apy_defi": {
-                "icon": "APY DeFi 💰",
-                "desc": "Recupera APY DeFi"
             }
         }
     },
@@ -164,10 +160,11 @@ def download_youtube_music(update, context):
 def download_music(update, context):
     initial_log("download_music", context.args)
     if Config.download:
+        file_name = "canzoni.zip"
         Config.download = False
         be_youtube_download(update.message.text)
-        update.message.reply_document(open('canzoni.zip', 'rb'), timeout=10000)
-        remove('canzoni.zip')
+        update.message.reply_document(open(file_name, 'rb'), timeout=10000)
+        remove(file_name)
 
 
 def update_config(update, context):
@@ -178,10 +175,10 @@ def update_config(update, context):
 
 def doc_handler(update, context):
     initial_log("doc_handler", context)
-    if update.message.document.file_name == "settings.json" and update.message.document.mime_type == "application/json":
+    if update.message.document.file_name in Config.settings['config_doc'] and update.message.document.mime_type == "application/json":
         if Config.update_conf:
             f = context.bot.getFile(update.message.document.file_id)
-            f.download("../config/settings.json")
+            f.download(f"../config/{update.message.document.file_name}")
             Config.update_conf = False
             to_ret = "FILE DI CONFIGURAZIONE AGGIORNATO!"
         else:
@@ -192,12 +189,13 @@ def doc_handler(update, context):
 def reload_config(update, context):
     initial_log("reload_config", context.args)
     Config().reload()
-    update.message.reply_text("FILE DI CONFIGURAZIONE RICARICATO!")
+    update.message.reply_text("FILE DI CONFIGURAZIONE RICARICATI!")
 
 
 def get_config(update, context):
     initial_log("get_config", context.args)
-    update.message.reply_document(open('../config/settings.json', 'r'))
+    for d in Config.settings['config_doc']:
+        update.message.reply_document(open(f'../config/{d}', 'r'))
 
 
 def status_generali(update, context):
@@ -212,44 +210,44 @@ def get_public_ip(update, context):
 
 def get_file_ovpn(update, context):
     initial_log("get_file_ovpn", context.args)
-    response = be_get_file_ovpn()
+    file_name = "client.ovpn"
+    response = be_get_file_ovpn(file_name)
     if response == "OK":
-        update.message.reply_document(open('client.ovpn', 'r'))
-        remove('client.ovpn')
+        update.message.reply_document(open(file_name, 'r'))
+        remove(file_name)
     else:
         update.message.reply_text(response)
-
-
-def get_apy_defi(update, context):
-    initial_log("get_apy_defi", context.args)
-    update.message.reply_text(be_get_apy_defi(Config.settings['platform_defi']))
 
 
 def get_value_token_defi(update, context):
     initial_log("get_value_token_defi", context.args)
     response = ""
-    for key, value in be_get_token_defi_value(Config.settings['token_defi']).items():
-        response += "*" + key + ":* " + str(value) + "$\n"
+    for key, value in be_get_token_defi_value(Config.token.copy()).items():
+        response += f"*{key}:* {str(value)}$\n"
     update.message.reply_text(markdown_text(response), parse_mode='MarkdownV2')
 
 
 def get_invest_status(update, context):
     initial_log("get_invest_status", context.args)
-    get_open_orders()
-    buy_sell_orders = get_order_history()
-    update.message.reply_text(get_wallet(buy_sell_orders))
-    update.message.reply_document(open('order-wallet.txt', 'r'))
-    update.message.reply_document(open('wallet-allocation.pdf', 'rb'))
-    remove('order-wallet.txt')
-    remove('wallet-allocation.pdf')
+    order_file = 'order-wallet.txt'
+    pdf_file = 'wallet-allocation.pdf'
+    get_open_orders(order_file)
+    buy_sell_orders = get_order_history(order_file)
+    update.message.reply_text(get_wallet(buy_sell_orders, order_file, pdf_file))
+    update.message.reply_document(open(order_file, 'r'))
+    update.message.reply_document(open(pdf_file, 'rb'))
+    remove(order_file)
+    remove(pdf_file)
 
 
 def get_balance_defi(update, context):
     initial_log("get_balance_defi", context.args)
     ret_str = ""
     total_usd = 0
+    update.message.reply_text('funzione sospesa')
+    '''
     for key, value in Config.settings['wallet_defi'].items():
-        balance_info = be_get_balance_defi(value)
+        balance_info = {}
         total_usd += balance_info['tot_usd_value']
         ret_str += get_separator(key.replace("_", " ").upper()) + "*ID:* " + value['id'] + "\n*VALUE:* " + str(balance_info['tot_usd_value']) + " $\n"
         for key_c, value_c in balance_info["chain"].items():
@@ -259,6 +257,7 @@ def get_balance_defi(update, context):
                 ret_str += "*" + key_cry + ":* " + str(value_cry['crypto']) + " *FIAT:* " + str(value_cry['fiat']) + " $\n"
     ret_str += get_separator("FINAL RECAP") + "*TOTAL DOLLAR:* " + str(round(total_usd, 2)) + " $"
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
+    '''
 
 
 def get_mining_status(update, context):
@@ -385,7 +384,7 @@ def get_trex_profiles(update, context):
         intensity = "*INTENSITY:* " + str(value['intensity'])[1:-1]
         pool_url = "*POOL URL:* " + value['pool_url']
         wallet_id = "*WALLET ID:* " + value['wallet']
-        ret_str += name + " " + crypto + "\n" + intensity + "\n" + pool_url + "\n" + wallet_id + "\n"
+        ret_str += f"{name} {crypto}\n{intensity}\n{pool_url}\n{wallet_id}\n"
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
 
 
@@ -514,7 +513,7 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 def main():
     Config().reload()
     basicConfig(
-        filename=Config.settings['log']['path_file'],
+        filename=None,#Config.settings['log']['path_file'],
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
