@@ -12,6 +12,7 @@
 /src/dist/*
 /src/build/*
 /src/my_account.session
+/res/GpuProfit/output.txt
 /bot.spec
 .DS_Store
 /log/*
