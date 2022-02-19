@@ -24,10 +24,26 @@ def get_flexible_savings_balance(asset):
     return loads(make_request("https://api.binance.com/sapi/v1/lending/daily/token/position?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
 
 
-def get_locked_savings_balance(asset, project_id):
-    query_string = "asset={}&projectId={}&status=HOLDING&timestamp={}".format(asset, project_id, str(get_server_time()))
+def get_locked_savings_balance(asset):
+    query_string = "asset={}&status=HOLDING&timestamp={}".format(asset, str(get_server_time()))
     signature = generate_signature(query_string)
     return loads(make_request("https://api.binance.com/sapi/v1/lending/project/position/list?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
+
+
+def get_intrest_history():
+    query_string = "lendingType=CUSTOMIZED_FIXED&timestamp={}".format(str(get_server_time()))
+    signature = generate_signature(query_string)
+    return loads(make_request("https://api.binance.com/sapi/v1/lending/union/interestHistory?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
+
+
+def get_spot_balance():
+    to_ret = {}
+    params = "timestamp=" + str(get_server_time())
+    resp = make_request("https://api.binance.com/api/v3/account?" + params + "&signature=" + generate_signature(params), api_binance=True)
+    for coin in loads(resp['response'])["balances"]:
+        if float(coin["free"]) + float(coin["locked"]) > 0:
+            to_ret[coin["asset"]] = float(coin["free"]) + float(coin["locked"])
+    return to_ret
 
 
 def get_open_orders(filename):
