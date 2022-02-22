@@ -2,9 +2,11 @@ from subprocess import PIPE, Popen
 from os import system
 from urllib.request import urlopen, Request
 from logging import info, exception
-from json import load, dumps
+from json import load, dumps, loads
 from selenium.webdriver import ChromeOptions, Chrome
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from hmac import new
+from hashlib import sha256
 
 
 def make_cmd(cmd, sys=False):
@@ -40,7 +42,7 @@ def make_cmd(cmd, sys=False):
     return response
 
 
-def make_request(url, api_binance=False, body=None):
+def make_request(url, api_binance=False, body=None, api_apeboard=''):
     info("MAKE REQUEST: %s", url)
     header = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.146 Safari/537.36'
@@ -49,6 +51,8 @@ def make_request(url, api_binance=False, body=None):
         header['Content-Type'] = 'application/json'
     if api_binance:
         header['X-MBX-APIKEY'] = Config.settings['binance']['binance_info']['key']
+    if api_apeboard != "":
+        header['passcode'] = api_apeboard
     to_return = {}
     try:
         if body is not None:
@@ -131,6 +135,41 @@ def read_file(file_path, json=True):
     return ctx
 
 
+def generate_signature(query_string):
+    return new(bytes(Config.settings['binance']['binance_info']['secret'], 'latin-1'), msg=bytes(query_string, 'latin-1'), digestmod=sha256).hexdigest().upper()
+
+
+def get_server_time():
+    return loads(make_request("https://api.binance.com/api/v3/time", api_binance=True)['response'])['serverTime']
+
+
+def get_passcode_apewallet():
+    endpoint_base = "https://apeboard.finance/"
+    name = str(make_request(f"{endpoint_base}dashboard")['response']).split('<script src="/_next/static/chunks/pages/_app-')[1].split(".js")[0]
+    resp = str(make_request(f"{endpoint_base}_next/static/chunks/pages/_app-{name}.js")['response'])
+    return resp.split('passcode="')[1].split('";')[0]
+
+
+def sum_platform_token(wallet, chain, pt_name, token, amount):
+    token_name = str.upper(token)
+    if token_name in wallet[chain]['platform'][pt_name]:
+        wallet[chain]['platform'][pt_name][token_name] += amount
+    else:
+        wallet[chain]['platform'][pt_name][token_name] = amount
+    return wallet
+
+
+def sum_token_aggegate(wallet, token, value):
+    if token in Config.settings['stablecoin']:
+        wallet['USD'] += value
+    else:
+        if token in wallet:
+            wallet[token] += value
+        else:
+            wallet[token] = value
+    return wallet
+
+
 class Config:
 
     settings = {}
@@ -138,12 +177,14 @@ class Config:
     chain = {}
     token = {}
     generali = {}
+    binance_earn = {}
     update_conf = False
     download = False
 
     @staticmethod
     def reload():
         Config.settings = read_file("../config/settings.json")
+        Config.binance_earn = read_file("../config/binance_earn.json")
         Config.orders = read_file("../config/order.json")
         Config.chain = read_file("../config/chain.json")
         Config.token = read_file("../config/token.json")

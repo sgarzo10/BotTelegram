@@ -2,8 +2,8 @@ from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
-from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download
-from binance import get_open_orders, get_order_history, get_wallet, get_spot_balance
+from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download, get_wallet_token
+from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
 from time import sleep
 from re import escape
@@ -19,9 +19,9 @@ commands = {
                 "icon": "Total Balance 💰",
                 "desc": "Riepilogo degli investimenti"
             },
-            "get_balance_defi": {
-                "icon": "DeFi Balance 💰",
-                "desc": "Restituisce il bilancio di tutte le crypto"
+            "get_balance_wallet": {
+                "icon": "Wallet Balance 💰",
+                "desc": "Restituisce il bilancio di tutte le crypto suddivise nei vari wallet"
             },
             "get_value_token_defi": {
                 "icon": "Token DeFi 💰",
@@ -240,24 +240,21 @@ def get_invest_status(update, context):
     remove(pdf_file)
 
 
-def get_balance_defi(update, context):
-    initial_log("get_balance_defi", context.args)
+def get_balance_wallet(update, context):
+    initial_log("get_balance_wallet", context.args)
     ret_str = ""
-    total_usd = 0
-    update.message.reply_text('funzione sospesa')
-    '''
-    for key, value in Config.settings['wallet_defi'].items():
-        balance_info = {}
-        total_usd += balance_info['tot_usd_value']
-        ret_str += get_separator(key.replace("_", " ").upper()) + "*ID:* " + value['id'] + "\n*VALUE:* " + str(balance_info['tot_usd_value']) + " $\n"
-        for key_c, value_c in balance_info["chain"].items():
-            ret_str += get_separator()
-            ret_str += "*CHAIN:* " + key_c.upper() + "\n"
-            for key_cry, value_cry in value_c.items():
-                ret_str += "*" + key_cry + ":* " + str(value_cry['crypto']) + " *FIAT:* " + str(value_cry['fiat']) + " $\n"
-    ret_str += get_separator("FINAL RECAP") + "*TOTAL DOLLAR:* " + str(round(total_usd, 2)) + " $"
+    total_wallet, wallet_list = get_wallet_token()
+    for key, value in wallet_list.items():
+        ret_str += get_separator(key.replace("_", " ").upper())
+        for key1, value1 in value.items():
+            ret_str += f"*CHAIN {key1.upper()}*\n"
+            for key2, value2 in value1['wallet'].items():
+                ret_str += f"\t\t\t*{key2}* {str(round(value2, 5))}\n"
+            for key2, value2 in value1['platform'].items():
+                ret_str += f"\t\t\t*PLATFORM {key2.upper()}*\n"
+                for key3, value3 in value2.items():
+                    ret_str += f"\t\t\t\t\t\t*{key3}* {str(round(value3, 5))}\n"
     update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
-    '''
 
 
 def get_mining_status(update, context):
@@ -513,7 +510,7 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 def main():
     Config().reload()
     basicConfig(
-        filename=Config.settings['log']['path_file'],
+        filename=None,#Config.settings['log']['path_file'],
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)

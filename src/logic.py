@@ -1,4 +1,4 @@
-from utility import make_cmd, make_request, Config, make_driver_selenium
+from utility import make_cmd, make_request, Config, make_driver_selenium, get_passcode_apewallet, sum_token_aggegate, sum_platform_token, get_server_time, generate_signature
 from json import loads
 from meross_iot.api import MerossHttpClient
 from logging import exception
@@ -108,6 +108,109 @@ def be_get_token_defi_value(tokens_chain):
     else:
         to_ret = to_ret_tmp
     return to_ret
+
+
+def evm_balance(soglia, wallet):
+    evm_wallet = {}
+    for c in wallet['chain']:
+        evm_wallet[c] = {
+            'wallet': {},
+            "platform": {}
+        }
+        ctx = loads(make_request(f"https://api.debank.com/token/balance_list?is_all=false&user_addr={wallet['wallet']}&chain={c}")['response'])
+        for d in ctx['data']:
+            bal = d['balance'] / pow(10, d['decimals'])
+            if d['price'] == 0.0 or bal * d['price'] > soglia:
+                evm_wallet[c]['wallet'][str.upper(d['symbol'])] = bal
+    ctx = loads(make_request(f"https://api.debank.com/portfolio/project_list?user_addr={wallet['wallet']}")['response'])
+    for d in ctx['data']:
+        evm_wallet[d['chain']]['platform'][d['name']] = {}
+        for p in d['portfolio_list']:
+            for t in p['detail']['supply_token_list']:
+                evm_wallet = sum_platform_token(evm_wallet, d['chain'], d['name'], t['symbol'], t['amount'])
+            if 'reward_token_list' in p['detail']:
+                for t in p['detail']['reward_token_list']:
+                    evm_wallet = sum_platform_token(evm_wallet, d['chain'], d['name'], t['symbol'], t['amount'])
+    return evm_wallet
+
+
+def ape_wallet_balance(soglia, passcode, wallet):
+    ape_wallet = {
+        wallet['chain']: {
+            'wallet': {},
+            "platform": {}
+        }
+    }
+    endpoint_base = "https://api.apeboard.finance/"
+    resp = {}
+    while resp == {}:
+        req = make_request(f"{endpoint_base}wallet/{wallet['chain']}/{wallet['wallet']}", api_apeboard=passcode)
+        if str(req['response']).find("HTTP Error 500") == -1 and str(req['response']).find("HTTP Error 503") == -1:
+            resp = loads(req['response'])
+    for c in resp:
+        if c['balance'] * c['price'] > soglia:
+            ape_wallet[wallet['chain']]['wallet'][str.upper(c['symbol'])] = c['balance']
+    for p in wallet['platform']:
+        ape_wallet[wallet['chain']]['platform'][p] = {}
+        resp = {}
+        while resp == {}:
+            req = make_request(f"{endpoint_base}{p}/{wallet['wallet']}", api_apeboard=passcode)
+            if str(req['response']).find("HTTP Error 500") == -1 and str(req['response']).find("HTTP Error 503") == -1:
+                resp = loads(req['response'])
+        nkey = ''
+        if 'savings' in list(resp.keys()):
+            nkey = 'savings'
+        if 'farms' in list(resp.keys()) and nkey == '':
+            nkey = 'farms'
+        for s in resp[nkey]:
+            for t in s['tokens']:
+                if str.upper(t['symbol']) == 'AUST':
+                    t['balance'] = t['balance'] * t['price']
+                ape_wallet = sum_platform_token(ape_wallet, wallet['chain'], p, t['symbol'], t['balance'])
+            if 'rewards' in list(s.keys()):
+                for r in s['rewards']:
+                    ape_wallet = sum_platform_token(ape_wallet, wallet['chain'], p, r['symbol'], r['balance'])
+    return ape_wallet
+
+
+def get_spot_and_locked_balance():
+    to_ret = {
+        "binance": {
+            "wallet": {},
+            "platform": {
+                "earn": {}
+            }
+        }
+    }
+    params = "timestamp=" + str(get_server_time())
+    resp = make_request("https://api.binance.com/api/v3/account?" + params + "&signature=" + generate_signature(params), api_binance=True)
+    for coin in loads(resp['response'])["balances"]:
+        if float(coin["free"]) + float(coin["locked"]) > 0:
+            to_ret["binance"]["wallet"][coin["asset"]] = float(coin["free"]) + float(coin["locked"])
+    for d in Config.binance_earn['data']:
+        to_ret['binance']['platform']['earn'][d['asset']] = float(d['amount'])
+    return to_ret
+
+
+def get_wallet_token():
+    total_wallet = {'USD': 0}
+    wallet_list = {}
+    soglia = 0.5
+    passcode = get_passcode_apewallet()
+    for key, value in Config.settings['defi'].items():
+        if isinstance(value['chain'], list):
+            wallet_list[key] = evm_balance(soglia, value)
+        else:
+            wallet_list[key] = ape_wallet_balance(soglia, passcode, value)
+    wallet_list['binance'] = get_spot_and_locked_balance()
+    for v in wallet_list.values():
+        for chain_info in v.values():
+            for key, value in chain_info['wallet'].items():
+                sum_token_aggegate(total_wallet, key, value)
+            for value in chain_info['platform'].values():
+                for key, balance in value.items():
+                    sum_token_aggegate(total_wallet, key, balance)
+    return total_wallet, wallet_list
 
 
 def get_nvidia_info():

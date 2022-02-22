@@ -2,6 +2,7 @@
 /__pycache__/*
 /config/trex_config.json
 /config/generali.json
+/config/binance_earn.json
 /config/order.json
 /config/chain.json
 /config/dhcpsrv.ini
