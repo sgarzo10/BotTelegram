@@ -233,7 +233,8 @@ def get_invest_status(update, context):
     pdf_file = 'wallet-allocation.pdf'
     get_open_orders(order_file)
     buy_sell_orders = get_order_history(order_file)
-    update.message.reply_text(get_wallet(buy_sell_orders, order_file, pdf_file))
+    total_wallet, wallet_list = get_wallet_token()
+    update.message.reply_text(get_wallet(buy_sell_orders, total_wallet, order_file, pdf_file))
     update.message.reply_document(open(order_file, 'r'))
     update.message.reply_document(open(pdf_file, 'rb'))
     remove(order_file)

@@ -191,7 +191,7 @@ def prepare_output(output_data, file_name_order, file_name_pdf):
     return tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt=".4f")
 
 
-def get_wallet(buy_sell_orders, file_name_order, file_name_pdf):
+def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
     output_data = {
         'assets_list': [],
         'actual_list': [],
@@ -247,11 +247,11 @@ def get_wallet(buy_sell_orders, file_name_order, file_name_pdf):
     eur_value = get_ath_and_value(res_conv, 'CEUR', coin)['actual_value']
     output_data['total_total_margin_eur'] = output_data['total_total_margin'] / eur_value
     output_data['total_total_invest_eur'] = output_data['total_total_invest'] / eur_value
-    output_data['total_balance_stable'] = sum(Config.settings["binance"]["stablecoin"]["USD"])
+    output_data['total_balance_stable'] = total_wallet['USD']
     output_data['total_balance_crypto_eur'] = output_data['total_balance'] / eur_value
     output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / eur_value
-    output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]["add"]) + Config.settings["binance"]["card"]["res"]
-    output_data['total_balance_eur'] = sum(Config.settings["binance"]["stablecoin"]["EUR"]) + Config.settings["binance"]["card"]["res"]
+    output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]) + total_wallet['EUR']
+    output_data['total_balance_eur'] = total_wallet['EUR']
     output_data['total_eur'] = output_data['total_balance_eur'] + output_data['total_balance_stable_eur'] + output_data['total_balance_crypto_eur']
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_crypto_eur'] * 100) / output_data['total_eur'], "label": f"CRYPTO perc\n{round(output_data['total_balance_crypto_eur'], 2)}€"})
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_stable_eur'] * 100) / output_data['total_eur'], "label": f"STABLE perc\n{round(output_data['total_balance_stable_eur'], 2)}€"})

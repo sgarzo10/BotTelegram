@@ -173,20 +173,24 @@ def ape_wallet_balance(soglia, passcode, wallet):
     return ape_wallet
 
 
-def get_spot_and_locked_balance():
+def get_spot_funding_and_locked_balance():
     to_ret = {
         "binance": {
             "wallet": {},
             "platform": {
-                "earn": {}
+                "earn": {},
+                "funding": {}
             }
         }
     }
     params = "timestamp=" + str(get_server_time())
-    resp = make_request("https://api.binance.com/api/v3/account?" + params + "&signature=" + generate_signature(params), api_binance=True)
-    for coin in loads(resp['response'])["balances"]:
+    resp = loads(make_request("https://api.binance.com/api/v3/account?" + params + "&signature=" + generate_signature(params), api_binance=True)['response'])
+    for coin in resp["balances"]:
         if float(coin["free"]) + float(coin["locked"]) > 0:
             to_ret["binance"]["wallet"][coin["asset"]] = float(coin["free"]) + float(coin["locked"])
+    resp = loads(make_request("https://api.binance.com/sapi/v1/asset/get-funding-asset?{}&signature={}".format(params, generate_signature(params)), api_binance=True, body={})['response'])
+    for c in resp:
+        to_ret['binance']['platform']['funding'][c['asset']] = float(c["free"]) + float(c["locked"])
     for d in Config.binance_earn['data']:
         to_ret['binance']['platform']['earn'][d['asset']] = float(d['amount'])
     return to_ret
@@ -202,7 +206,7 @@ def get_wallet_token():
             wallet_list[key] = evm_balance(soglia, value)
         else:
             wallet_list[key] = ape_wallet_balance(soglia, passcode, value)
-    wallet_list['binance'] = get_spot_and_locked_balance()
+    wallet_list['binance'] = get_spot_funding_and_locked_balance()
     for v in wallet_list.values():
         for chain_info in v.values():
             for key, value in chain_info['wallet'].items():
