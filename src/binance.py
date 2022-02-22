@@ -8,6 +8,52 @@ from matplotlib import use
 from matplotlib.pyplot import pie, legend, suptitle, axis, figure, close, cla
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import array
+from threading import Thread
+
+
+class BinanceThread (Thread):
+
+    def __init__(self, key, time):
+        Thread.__init__(self)
+        self.key = key
+        self.time = time
+        self.order_list = []
+        self.buy_sell_orders = {}
+
+    def run(self):
+        params = "timestamp=" + self.time + "&symbol=" + self.key
+        resp = make_request("https://api.binance.com/api/v3/myTrades?" + params + "&signature=" + generate_signature(params), api_binance=True)
+        orders = {}
+        if resp['state'] is True:
+            orders = loads(resp['response'])
+        medium, qty_total, medium_sell, qty_total_sell = 0, 0, 0, 0
+        if self.key in Config.orders:
+            for order in Config.orders[self.key]:
+                if order['type'] == 'BUY':
+                    qty_total += order['amount']
+                    medium += order['amount'] * order['value']
+                else:
+                    qty_total_sell += order['amount']
+                    medium_sell += order['amount'] * order['value']
+                self.order_list.append([order['type'], self.key, order['value'], order['amount'], "", order['amount'] * order['value']])
+        for order in orders:
+            type_order = "SELL"
+            if order['isBuyer']:
+                type_order = "BUY"
+                medium += float(order['price']) * float(order['qty'])
+                qty_total += float(order['qty'])
+            else:
+                medium_sell += float(order['price']) * float(order['qty'])
+                qty_total_sell += float(order['qty'])
+            self.order_list.append([type_order, order['symbol'], order['price'], order['qty'], order['commission'] + " " + order['commissionAsset'], order['quoteQty']])
+        self.buy_sell_orders[self.key] = {
+            'buy': {'medium': 0, 'qty_total': 0},
+            'sell': {'medium': 0, 'qty_total': 0}
+        }
+        if qty_total > 0:
+            self.buy_sell_orders[self.key]['buy'] = {'medium': medium / qty_total, 'qty_total': qty_total}
+        if qty_total_sell > 0:
+            self.buy_sell_orders[self.key]['sell'] = {'medium': medium_sell / qty_total_sell, 'qty_total': qty_total_sell}
 
 
 def generate_signature(query_string):
@@ -64,40 +110,17 @@ def get_open_orders(filename):
 def get_order_history(filename):
     order_list = []
     buy_sell_orders = {}
+    thread_list = []
+    time = str(get_server_time())
     for key in Config.settings['binance']['symbols'].keys():
-        params = "timestamp=" + str(get_server_time()) + "&symbol=" + key
-        resp = make_request("https://api.binance.com/api/v3/myTrades?" + params + "&signature=" + generate_signature(params), api_binance=True)
-        orders = {}
-        if resp['state'] is True:
-            orders = loads(resp['response'])
-        medium, qty_total, medium_sell, qty_total_sell = 0, 0, 0, 0
-        if key in Config.orders:
-            for order in Config.orders[key]:
-                if order['type'] == 'BUY':
-                    qty_total += order['amount']
-                    medium += order['amount'] * order['value']
-                else:
-                    qty_total_sell += order['amount']
-                    medium_sell += order['amount'] * order['value']
-                order_list.append([order['type'], key, order['value'], order['amount'], "", order['amount'] * order['value']])
-        for order in orders:
-            type_order = "SELL"
-            if order['isBuyer']:
-                type_order = "BUY"
-                medium += float(order['price']) * float(order['qty'])
-                qty_total += float(order['qty'])
-            else:
-                medium_sell += float(order['price']) * float(order['qty'])
-                qty_total_sell += float(order['qty'])
-            order_list.append([type_order, order['symbol'], order['price'], order['qty'], order['commission'] + " " + order['commissionAsset'], order['quoteQty']])
-        buy_sell_orders[key] = {
-            'buy': {'medium': 0, 'qty_total': 0},
-            'sell': {'medium': 0, 'qty_total': 0}
-        }
-        if qty_total > 0:
-            buy_sell_orders[key]['buy'] = {'medium': medium / qty_total, 'qty_total': qty_total}
-        if qty_total_sell > 0:
-            buy_sell_orders[key]['sell'] = {'medium': medium_sell / qty_total_sell, 'qty_total': qty_total_sell}
+        thread = BinanceThread(key, time)
+        thread.setDaemon(True)
+        thread_list.append(thread)
+        thread.start()
+    for t in thread_list:
+        t.join()
+        order_list = order_list + t.order_list
+        buy_sell_orders |= t.buy_sell_orders
     f = open(filename, "a")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
