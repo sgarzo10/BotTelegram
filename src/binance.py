@@ -1,4 +1,4 @@
-from utility import Config, make_request, generate_signature, get_server_time
+from utility import Config, make_request, get_server_time, make_binance_request
 from json import loads
 from tabulate import tabulate
 from logic import be_get_token_defi_value
@@ -11,19 +11,14 @@ from threading import Thread
 
 class BinanceThread (Thread):
 
-    def __init__(self, key, time):
+    def __init__(self, key):
         Thread.__init__(self)
         self.key = key
-        self.time = time
         self.order_list = []
         self.buy_sell_orders = {}
 
     def run(self):
-        params = "timestamp=" + self.time + "&symbol=" + self.key
-        resp = make_request("https://api.binance.com/api/v3/myTrades?" + params + "&signature=" + generate_signature(params), api_binance=True)
-        orders = {}
-        if resp['state'] is True:
-            orders = loads(resp['response'])
+        orders = make_binance_request("api/v3/myTrades", f"timestamp={Config.settings['binance']['time']}&symbol={self.key}")
         medium, qty_total, medium_sell, qty_total_sell = 0, 0, 0, 0
         if self.key in Config.orders:
             for order in Config.orders[self.key]:
@@ -54,31 +49,18 @@ class BinanceThread (Thread):
             self.buy_sell_orders[self.key]['sell'] = {'medium': medium_sell / qty_total_sell, 'qty_total': qty_total_sell}
 
 
-def get_flexible_savings_balance(asset):
-    query_string = "asset={}&timestamp={}".format(asset, str(get_server_time()))
-    signature = generate_signature(query_string)
-    return loads(make_request("https://api.binance.com/sapi/v1/lending/daily/token/position?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
-
-
-def get_locked_savings_balance(asset):
-    query_string = "asset={}&status=HOLDING&timestamp={}".format(asset, str(get_server_time()))
-    signature = generate_signature(query_string)
-    return loads(make_request("https://api.binance.com/sapi/v1/lending/project/position/list?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
-
-
-def get_interest_history():
-    query_string = "lendingType=CUSTOMIZED_FIXED&timestamp={}".format(str(get_server_time()))
-    signature = generate_signature(query_string)
-    return loads(make_request("https://api.binance.com/sapi/v1/lending/union/interestHistory?{}&signature={}".format(query_string, signature), api_binance=True)['response'])
+'''
+make_binance_request("sapi/v1/lending/daily/token/position", "asset={}&timestamp={}".format(asset, str(get_server_time())))
+make_binance_request("sapi/v1/lending/project/position/list", "asset={}&status=HOLDING&timestamp={}".format(asset, str(get_server_time())))
+make_binance_request("sapi/v1/lending/union/interestHistory", "lendingType=CUSTOMIZED_FIXED&timestamp={}".format(str(get_server_time())))
+'''
 
 
 def get_open_orders(filename):
     f = open(filename, "w")
     f.write("")
     f.close()
-    query_string = "timestamp=" + str(get_server_time())
-    resp = make_request("https://api.binance.com/api/v3/openOrders?" + query_string + "&signature=" + generate_signature(query_string), api_binance=True)
-    orders = loads(resp['response'])
+    orders = make_binance_request("api/v3/openOrders", f"timestamp={Config.settings['binance']['time']}")
     order_list = []
     for order in orders:
         order_list.append([order['side'], order['symbol'], order['price'], order['origQty'], str(float(order['price']) * float(order['origQty']))])
@@ -91,9 +73,8 @@ def get_order_history(filename):
     order_list = []
     buy_sell_orders = {}
     thread_list = []
-    time = str(get_server_time())
     for key in Config.settings['binance']['symbols'].keys():
-        thread = BinanceThread(key, time)
+        thread = BinanceThread(key)
         thread.setDaemon(True)
         thread_list.append(thread)
         thread.start()

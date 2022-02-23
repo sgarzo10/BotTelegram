@@ -1,7 +1,7 @@
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
-from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list
+from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list, get_server_time
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download, get_wallet_token
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
@@ -231,6 +231,7 @@ def get_invest_status(update, context):
     initial_log("get_invest_status", context.args)
     order_file = 'order-wallet.txt'
     pdf_file = 'wallet-allocation.pdf'
+    Config.settings['binance']['time'] = get_server_time()
     get_open_orders(order_file)
     buy_sell_orders = get_order_history(order_file)
     total_wallet, wallet_list = get_wallet_token()
@@ -244,6 +245,7 @@ def get_invest_status(update, context):
 def get_balance_wallet(update, context):
     initial_log("get_balance_wallet", context.args)
     ret_str = ""
+    Config.settings['binance']['time'] = get_server_time()
     total_wallet, wallet_list = get_wallet_token()
     for key, value in wallet_list.items():
         ret_str += get_separator(key.replace("_", " ").upper())
@@ -511,7 +513,7 @@ def my_add_handler(struct_commands, disp, cmd_filter):
 def main():
     Config().reload()
     basicConfig(
-        filename=None,#Config.settings['log']['path_file'],
+        filename=Config.settings['log']['path_file'],
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
     upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)

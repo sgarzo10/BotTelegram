@@ -1,4 +1,4 @@
-from utility import make_cmd, make_request, Config, make_driver_selenium, get_passcode_apewallet, sum_token_aggegate, sum_platform_token, get_server_time, generate_signature
+from utility import make_cmd, make_request, Config, make_driver_selenium, get_passcode_apewallet, sum_token_aggegate, sum_platform_token, make_binance_request
 from json import loads
 from meross_iot.api import MerossHttpClient
 from logging import exception
@@ -183,12 +183,12 @@ def get_spot_funding_and_locked_balance():
             }
         }
     }
-    params = "timestamp=" + str(get_server_time())
-    resp = loads(make_request("https://api.binance.com/api/v3/account?" + params + "&signature=" + generate_signature(params), api_binance=True)['response'])
+    params = "timestamp=" + Config.settings["binance"]["time"]
+    resp = make_binance_request("api/v3/account",  params)
     for coin in resp["balances"]:
         if float(coin["free"]) + float(coin["locked"]) > 0:
             to_ret["binance"]["wallet"][coin["asset"]] = float(coin["free"]) + float(coin["locked"])
-    resp = loads(make_request("https://api.binance.com/sapi/v1/asset/get-funding-asset?{}&signature={}".format(params, generate_signature(params)), api_binance=True, body={})['response'])
+    resp = make_binance_request("sapi/v1/asset/get-funding-asset", params, body={})
     for c in resp:
         to_ret['binance']['platform']['funding'][c['asset']] = float(c["free"]) + float(c["locked"])
     for d in Config.binance_earn['data']:
@@ -201,12 +201,29 @@ def get_wallet_token():
     wallet_list = {}
     soglia = 0.5
     passcode = get_passcode_apewallet()
+    wallet_list['binance'] = get_spot_funding_and_locked_balance()
     for key, value in Config.settings['defi'].items():
         if isinstance(value['chain'], list):
             wallet_list[key] = evm_balance(soglia, value)
         else:
             wallet_list[key] = ape_wallet_balance(soglia, passcode, value)
-    wallet_list['binance'] = get_spot_funding_and_locked_balance()
+    for key, value in Config.settings['binance']['wallet'].items():
+        if key not in wallet_list.keys():
+            wallet_list[key] = value
+        else:
+            for key1, value1 in value.items():
+                if key1 not in wallet_list[key].keys():
+                    wallet_list[key][key1] = value1
+                else:
+                    for key2, value2 in value1['platform'].items():
+                        if key2 not in wallet_list[key][key1]['platform'].keys():
+                            wallet_list[key][key1]['platform'][key2] = value2
+                        else:
+                            for key3, value3 in value2.items():
+                                if key3 not in wallet_list[key][key1]['platform'][key2].keys():
+                                    wallet_list[key][key1]['platform'][key2][key3] = value3
+                                else:
+                                    wallet_list[key][key1]['platform'][key2][key3] += value3
     for v in wallet_list.values():
         for chain_info in v.values():
             for key, value in chain_info['wallet'].items():
@@ -214,8 +231,6 @@ def get_wallet_token():
             for value in chain_info['platform'].values():
                 for key, balance in value.items():
                     total_wallet = sum_token_aggegate(total_wallet, key, balance)
-    for key, value in Config.settings['binance']['wallet'].items():
-        total_wallet = sum_token_aggegate(total_wallet, key, value)
     return total_wallet, wallet_list
 
 

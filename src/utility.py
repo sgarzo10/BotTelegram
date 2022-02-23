@@ -135,14 +135,6 @@ def read_file(file_path, json=True):
     return ctx
 
 
-def generate_signature(query_string):
-    return new(bytes(Config.settings['binance']['binance_info']['secret'], 'latin-1'), msg=bytes(query_string, 'latin-1'), digestmod=sha256).hexdigest().upper()
-
-
-def get_server_time():
-    return loads(make_request("https://api.binance.com/api/v3/time", api_binance=True)['response'])['serverTime']
-
-
 def get_passcode_apewallet():
     endpoint_base = "https://apeboard.finance/"
     name = str(make_request(f"{endpoint_base}dashboard")['response']).split('<script src="/_next/static/chunks/pages/_app-')[1].split(".js")[0]
@@ -168,6 +160,23 @@ def sum_token_aggegate(wallet, token, value):
         else:
             wallet[token] = value
     return wallet
+
+
+def generate_signature(query_string):
+    return new(bytes(Config.settings['binance']['binance_info']['secret'], 'latin-1'), msg=bytes(query_string, 'latin-1'), digestmod=sha256).hexdigest().upper()
+
+
+def get_server_time():
+    return str(loads(make_request("https://api.binance.com/api/v3/time", api_binance=True)['response'])['serverTime'])
+
+
+def make_binance_request(url, query_string, body=None):
+    to_ret = {}
+    signature = generate_signature(query_string)
+    response = make_request(f"https://api.binance.com/{url}?{query_string}&signature={signature}", api_binance=True, body=body)
+    if response['state']:
+        to_ret = loads(response['response'])
+    return to_ret
 
 
 class Config:
