@@ -107,13 +107,14 @@ def get_order_history(filename):
     return buy_sell_orders
 
 
-def calculate_budget_coin(buy_sell_orders, key):
+def calculate_budget_coin(buy_sell_orders, total_wallet):
     to_ret = {'mining': 0, 'fee': 0}
-    if key in Config.settings['binance']['mining']:
-        to_ret['mining'] = Config.settings['binance']['mining'][key]
-    if key in Config.settings['binance']['fee']:
-        to_ret['fee'] = Config.settings['binance']['fee'][key]
-    to_ret['budget'] = to_ret['mining'] + buy_sell_orders['buy']['qty_total'] - buy_sell_orders['sell']['qty_total'] - to_ret['fee']
+    diff_order = buy_sell_orders['buy']['qty_total'] - buy_sell_orders['sell']['qty_total']
+    if total_wallet > diff_order:
+        to_ret['mining'] = total_wallet - diff_order
+    else:
+        to_ret['fee'] = diff_order - total_wallet
+    to_ret['budget'] = total_wallet
     return to_ret
 
 
@@ -208,7 +209,7 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
         total_margin, actual_margin, sell_mining = 0, 0, 0
-        actual_budget = calculate_budget_coin(buy_sell_orders[key], key)
+        actual_budget = calculate_budget_coin(buy_sell_orders[key], total_wallet[key.replace("BUSD", "")] if key.replace("BUSD", "") in total_wallet.keys() else 0)
         if buy_sell_orders[key]['sell']['qty_total'] > 0 or actual_budget['fee'] > 0:
             if buy_sell_orders[key]['sell']['qty_total'] > buy_sell_orders[key]['buy']['qty_total']:
                 total_margin = total_return - total_invest - (actual_budget['fee'] * buy_sell_orders[key]['buy']['medium'])

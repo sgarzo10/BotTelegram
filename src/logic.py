@@ -192,7 +192,7 @@ def get_spot_funding_and_locked_balance():
     for c in resp:
         to_ret['binance']['platform']['funding'][c['asset']] = float(c["free"]) + float(c["locked"])
     for d in Config.binance_earn['data']:
-        to_ret['binance']['platform']['earn'][d['asset']] = float(d['amount'])
+        to_ret = sum_platform_token(to_ret, 'binance', 'earn', d['asset'], float(d['amount']))
     return to_ret
 
 
@@ -210,10 +210,12 @@ def get_wallet_token():
     for v in wallet_list.values():
         for chain_info in v.values():
             for key, value in chain_info['wallet'].items():
-                sum_token_aggegate(total_wallet, key, value)
+                total_wallet = sum_token_aggegate(total_wallet, key, value)
             for value in chain_info['platform'].values():
                 for key, balance in value.items():
-                    sum_token_aggegate(total_wallet, key, balance)
+                    total_wallet = sum_token_aggegate(total_wallet, key, balance)
+    for key, value in Config.settings['binance']['wallet'].items():
+        total_wallet = sum_token_aggegate(total_wallet, key, value)
     return total_wallet, wallet_list
 
 
