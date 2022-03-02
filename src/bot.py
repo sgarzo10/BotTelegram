@@ -9,147 +9,6 @@ from time import sleep
 from re import escape
 from os import remove
 
-commands = {
-    "crypto": {
-        "icon": 'Crypto 💰',
-        "row_size": 3,
-        "desc": "Funzioni crypto",
-        "commands": {
-            "get_invest_status": {
-                "icon": "Total Balance 💰",
-                "desc": "Riepilogo degli investimenti"
-            },
-            "get_balance_wallet": {
-                "icon": "Wallet Balance 💰",
-                "desc": "Restituisce il bilancio di tutte le crypto suddivise nei vari wallet"
-            },
-            "get_value_token_defi": {
-                "icon": "Token DeFi 💰",
-                "desc": "Recupera il valore dei token DeFi",
-            }
-        }
-    },
-    "mining": {
-        "icon": 'Mining ⛏',
-        "row_size": 3,
-        "desc": "Funzioni mining",
-        "commands": {
-            "get_mining_status": {
-                "icon": "Status ⛏",
-                "desc": "Restituisce lo stato del miner"
-            },
-            "start_miner": {
-                "icon": "Start ⛏",
-                "desc": "Avvia il miner"
-            },
-            "stop_miner": {
-                "icon": "Stop ⛏",
-                "desc": "Arresta il miner"
-            },
-            "set_gpu_speed_fan": {
-                "icon": "Set Fan ⛏",
-                "desc": "Setta la velocità della ventola della GPU"
-            },
-            "get_trex_profiles": {
-                "icon": "Get Profiles ⛏",
-                "desc": "Restituisce la lista dei profili t-rex"
-            },
-            "set_trex_profile": {
-                "icon": "Set Profiles ⛏",
-                "desc": "Imposta il profilo per t-rex"
-            }
-        }
-    },
-    "vpn": {
-        "icon": "VPN 🔐",
-        "desc": "Funzioni VPN",
-        "row_size": 2,
-        "commands": {
-            "get_status_server_vpn": {
-                "icon": "Status 🔐",
-                "desc": "Restituisce lo stato del server VPN"
-            },
-            "get_file_ovpn": {
-                "icon": "Client File 🔐",
-                "desc": "Restituisce il file per il client Open VPN"
-            },
-            "start_server_vpn": {
-                "icon": "Start 🔐",
-                "desc": "Avvia il server VPN"
-            },
-            "stop_server_vpn": {
-                "icon": "Stop 🔐",
-                "desc": "Arreta il server VPN"
-            }
-        }
-    },
-    "ap": {
-        "icon": "Access Point 📡",
-        "row_size": 3,
-        "desc": "Funzioni AP",
-        "commands": {
-            "get_access_point_status": {
-                "icon": "Status 📡",
-                "desc": "Restituisce lo stato dell'access point"
-            },
-            "start_access_point": {
-                "icon": "Start 📡",
-                "desc": "Avvia l'access point"
-            },
-            "stop_access_point": {
-                "icon": "Stop 📡",
-                "desc": "Arresta l'access point"
-            }
-        }
-    },
-    "football": {
-        "icon": "Football ⚽",
-        "row_size": 1,
-        "desc": "Funzioni football",
-        "commands": {
-            "get_link": {
-                "icon": "Link ⚽",
-                "desc": "Recupera link per partite"
-            }
-        }
-    },
-    "cross": {
-        "icon": "Cross 🔮",
-        "row_size": 3,
-        "desc": "Funzioni cross",
-        "commands": {
-            "status_generali": {
-                "icon": "Generali 🔮",
-                "desc": "Recupera lo stato dell'investimetno in generali"
-            },
-            "download_youtube_music": {
-                "icon": "Download Music 🔮",
-                "desc": "Scarica canzoni da youtube (max 50 alla volta)"
-            },
-            "shutdown_system": {
-                "icon": "Shutdown 🔮",
-                "desc": "Arresta il sistema"
-            },
-            "get_public_ip": {
-                "icon": "Public IP 🔮",
-                "desc": "Restituisce IP pubblico del server"
-            },
-            "get_config": {
-                "icon": "Get Config 🔮",
-                "desc": "Restituisce il file di configurazione del bot"
-            },
-            "update_config": {
-                "icon": "Update Config 🔮",
-                "desc": "Aggiorna il file di configurazione del bot"
-            },
-            "reload_config": {
-                "icon": "Reload Config 🔮",
-                "desc": "Ricarica il file di configurazione del bot"
-            }
-        }
-    }
-}
-
 
 def download_youtube_music(update, context):
     initial_log("download_youtube_music", context.args)
@@ -470,8 +329,8 @@ def start(update, context):
     desc = ""
     for key, value in Config.settings['function'].items():
         if value['active']:
-            desc += commands[key]['icon'] + ": " + commands[key]['desc'] + "\n"
-            temp_list.append(commands[key]['icon'])
+            desc += Config.bot_string[key]['icon'] + ": " + Config.bot_string[key]['desc'] + "\n"
+            temp_list.append(Config.bot_string[key]['icon'])
         if len(temp_list) == 2:
             keyboard.append(temp_list)
             temp_list = []
@@ -485,7 +344,7 @@ def generate_key(update, context):
     keyboard = []
     temp_list = []
     desc = ""
-    for value in commands.values():
+    for value in Config.bot_string.values():
         if value['icon'] == update.message.text:
             desc += str(update.message.text) + "\n"
             for value_command in value['commands'].values():
@@ -528,7 +387,7 @@ def main():
     upd.dispatcher.add_handler(MessageHandler(Filters.text('Main Menu 🔙') & Filters.user(username=set(users_list)), start))
     for key, value in Config.settings['function'].items():
         if value['active']:
-            cmd_str += my_add_handler(commands[key], upd.dispatcher, Filters.user(username=set(value['users_abil'])))
+            cmd_str += my_add_handler(Config.bot_string[key], upd.dispatcher, Filters.user(username=set(value['users_abil'])))
     upd.dispatcher.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
     upd.dispatcher.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
     upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))

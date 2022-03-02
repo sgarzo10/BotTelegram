@@ -187,6 +187,7 @@ class Config:
     token = {}
     generali = {}
     binance_earn = {}
+    bot_string = {}
     update_conf = False
     download = False
 
@@ -198,3 +199,4 @@ class Config:
         Config.chain = read_file("../config/chain.json")
         Config.token = read_file("../config/token.json")
         Config.generali = read_file("../config/generali.json")
+        Config.bot_string = read_file("../config/bot_string.json")

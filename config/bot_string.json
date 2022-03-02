@@ -1,0 +1,140 @@
+{
+    "crypto": {
+        "icon": "Crypto 💰",
+        "row_size": 3,
+        "desc": "Funzioni crypto",
+        "commands": {
+            "get_invest_status": {
+                "icon": "Total Balance 💰",
+                "desc": "Riepilogo degli investimenti"
+            },
+            "get_balance_wallet": {
+                "icon": "Wallet Balance 💰",
+                "desc": "Restituisce il bilancio di tutte le crypto suddivise nei vari wallet"
+            },
+            "get_value_token_defi": {
+                "icon": "Token DeFi 💰",
+                "desc": "Recupera il valore dei token DeFi"
+            }
+        }
+    },
+    "mining": {
+        "icon": "Mining ⛏",
+        "row_size": 3,
+        "desc": "Funzioni mining",
+        "commands": {
+            "get_mining_status": {
+                "icon": "Status ⛏",
+                "desc": "Restituisce lo stato del miner"
+            },
+            "start_miner": {
+                "icon": "Start ⛏",
+                "desc": "Avvia il miner"
+            },
+            "stop_miner": {
+                "icon": "Stop ⛏",
+                "desc": "Arresta il miner"
+            },
+            "set_gpu_speed_fan": {
+                "icon": "Set Fan ⛏",
+                "desc": "Setta la velocità della ventola della GPU"
+            },
+            "get_trex_profiles": {
+                "icon": "Get Profiles ⛏",
+                "desc": "Restituisce la lista dei profili t-rex"
+            },
+            "set_trex_profile": {
+                "icon": "Set Profiles ⛏",
+                "desc": "Imposta il profilo per t-rex"
+            }
+        }
+    },
+    "vpn": {
+        "icon": "VPN 🔐",
+        "desc": "Funzioni VPN",
+        "row_size": 2,
+        "commands": {
+            "get_status_server_vpn": {
+                "icon": "Status 🔐",
+                "desc": "Restituisce lo stato del server VPN"
+            },
+            "get_file_ovpn": {
+                "icon": "Client File 🔐",
+                "desc": "Restituisce il file per il client Open VPN"
+            },
+            "start_server_vpn": {
+                "icon": "Start 🔐",
+                "desc": "Avvia il server VPN"
+            },
+            "stop_server_vpn": {
+                "icon": "Stop 🔐",
+                "desc": "Arreta il server VPN"
+            }
+        }
+    },
+    "ap": {
+        "icon": "Access Point 📡",
+        "row_size": 3,
+        "desc": "Funzioni AP",
+        "commands": {
+            "get_access_point_status": {
+                "icon": "Status 📡",
+                "desc": "Restituisce lo stato dell'access point"
+            },
+            "start_access_point": {
+                "icon": "Start 📡",
+                "desc": "Avvia l'access point"
+            },
+            "stop_access_point": {
+                "icon": "Stop 📡",
+                "desc": "Arresta l'access point"
+            }
+        }
+    },
+    "football": {
+        "icon": "Football ⚽",
+        "row_size": 1,
+        "desc": "Funzioni football",
+        "commands": {
+            "get_link": {
+                "icon": "Link ⚽",
+                "desc": "Recupera link per partite"
+            }
+        }
+    },
+    "cross": {
+        "icon": "Cross 🔮",
+        "row_size": 3,
+        "desc": "Funzioni cross",
+        "commands": {
+            "status_generali": {
+                "icon": "Generali 🔮",
+                "desc": "Recupera lo stato dell'investimetno in generali"
+            },
+            "download_youtube_music": {
+                "icon": "Download Music 🔮",
+                "desc": "Scarica canzoni da youtube (max 50 alla volta)"
+            },
+            "shutdown_system": {
+                "icon": "Shutdown 🔮",
+                "desc": "Arresta il sistema"
+            },
+            "get_public_ip": {
+                "icon": "Public IP 🔮",
+                "desc": "Restituisce IP pubblico del server"
+            },
+            "get_config": {
+                "icon": "Get Config 🔮",
+                "desc": "Restituisce il file di configurazione del bot"
+            },
+            "update_config": {
+                "icon": "Update Config 🔮",
+                "desc": "Aggiorna il file di configurazione del bot"
+            },
+            "reload_config": {
+                "icon": "Reload Config 🔮",
+                "desc": "Ricarica il file di configurazione del bot"
+            }
+        }
+    }
+}
