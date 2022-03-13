@@ -179,6 +179,21 @@ def make_binance_request(url, query_string, body=None):
     return to_ret
 
 
+def generate_string_wallet(wallet_list):
+    ret_str = ""
+    for key, value in wallet_list.items():
+        ret_str += get_separator(key.replace("_", " ").upper())
+        for key1, value1 in value.items():
+            ret_str += f"*CHAIN {key1.upper()}*\n"
+            for key2, value2 in value1['wallet'].items():
+                ret_str += f"\t\t\t*{key2}* {str(round(value2, 5))}\n"
+            for key2, value2 in value1['platform'].items():
+                ret_str += f"\t\t\t*PLATFORM {key2.upper()}*\n"
+                for key3, value3 in value2.items():
+                    ret_str += f"\t\t\t\t\t\t*{key3}* {str(round(value3, 5))}\n"
+    return ret_str
+
+
 class Config:
 
     settings = {}

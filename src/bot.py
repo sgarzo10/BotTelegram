@@ -1,7 +1,7 @@
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
-from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list, get_server_time
+from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list, get_server_time, generate_string_wallet
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download, get_wallet_token
 from binance import get_open_orders, get_order_history, get_wallet
 from pyrogram import Client
@@ -95,6 +95,7 @@ def get_invest_status(update, context):
     buy_sell_orders = get_order_history(order_file)
     total_wallet, wallet_list = get_wallet_token()
     update.message.reply_text(get_wallet(buy_sell_orders, total_wallet, order_file, pdf_file))
+    update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
     update.message.reply_document(open(order_file, 'r'))
     update.message.reply_document(open(pdf_file, 'rb'))
     remove(order_file)
@@ -103,20 +104,9 @@ def get_invest_status(update, context):
 
 def get_balance_wallet(update, context):
     initial_log("get_balance_wallet", context.args)
-    ret_str = ""
     Config.settings['binance']['time'] = get_server_time()
     total_wallet, wallet_list = get_wallet_token()
-    for key, value in wallet_list.items():
-        ret_str += get_separator(key.replace("_", " ").upper())
-        for key1, value1 in value.items():
-            ret_str += f"*CHAIN {key1.upper()}*\n"
-            for key2, value2 in value1['wallet'].items():
-                ret_str += f"\t\t\t*{key2}* {str(round(value2, 5))}\n"
-            for key2, value2 in value1['platform'].items():
-                ret_str += f"\t\t\t*PLATFORM {key2.upper()}*\n"
-                for key3, value3 in value2.items():
-                    ret_str += f"\t\t\t\t\t\t*{key3}* {str(round(value3, 5))}\n"
-    update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
+    update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
 
 
 def get_mining_status(update, context):
