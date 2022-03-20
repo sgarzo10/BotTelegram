@@ -123,7 +123,10 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     else:
         addr = Config.settings['binance']["symbols"][key].split("-")[0]
         chain = Config.settings['binance']["symbols"][key].split("-")[1]
-        to_ret['actual_value'] = be_get_token_defi_value({chain: {addr: name}})[name]
+        res = be_get_token_defi_value({chain: {addr: name}})
+        to_ret['actual_value'] = 0
+        if name in res:
+            to_ret['actual_value'] = res[name]
         if ath:
             to_ret['ath'] = 'N.D.'
     return to_ret
