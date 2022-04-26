@@ -64,6 +64,7 @@ def make_request(url, api_binance=False, body=None, api_apeboard=''):
         exception(e)
         to_return['state'] = False
         to_return['response'] = "ERRORE: " + str(e)
+    info("RESPONSE: %s", to_return['response'])
     return to_return
 
 
