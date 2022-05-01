@@ -249,7 +249,7 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
     output_data['total_balance_stable'] = total_wallet['USD']
     output_data['total_balance_crypto_eur'] = output_data['total_balance'] / eur_value
     output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / eur_value
-    output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]) + total_wallet['EUR']
+    output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]) + total_wallet['card_eur']
     output_data['total_balance_eur'] = total_wallet['EUR']
     output_data['total_eur'] = output_data['total_balance_eur'] + output_data['total_balance_stable_eur'] + output_data['total_balance_crypto_eur']
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_crypto_eur'] * 100) / output_data['total_eur'], "label": f"CRYPTO perc\n{round(output_data['total_balance_crypto_eur'], 2)}€"})
