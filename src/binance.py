@@ -7,6 +7,7 @@ from matplotlib.pyplot import pie, legend, suptitle, axis, figure, close, cla
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import array
 from threading import Thread
+from datetime import datetime
 
 
 class BinanceThread (Thread):
@@ -28,7 +29,7 @@ class BinanceThread (Thread):
                 else:
                     qty_total_sell += order['amount']
                     medium_sell += order['amount'] * order['value']
-                self.order_list.append([order['type'], self.key, order['value'], order['amount'], "", order['amount'] * order['value']])
+                self.order_list.append([order['date'], order['type'], self.key, order['value'], order['amount'], "", order['amount'] * order['value']])
         for order in orders:
             type_order = "SELL"
             if order['isBuyer']:
@@ -38,7 +39,8 @@ class BinanceThread (Thread):
             else:
                 medium_sell += float(order['price']) * float(order['qty'])
                 qty_total_sell += float(order['qty'])
-            self.order_list.append([type_order, order['symbol'], order['price'], order['qty'], order['commission'] + " " + order['commissionAsset'], order['quoteQty']])
+            self.order_list.append([datetime.fromtimestamp(order['time'] / 1000).strftime('%Y-%m-%d'), type_order, order['symbol'], order['price'], order['qty'], order['commission'] + " " + order['commissionAsset'], order['quoteQty']])
+        self.order_list.sort(key=lambda x: x[0])
         self.buy_sell_orders[self.key] = {
             'buy': {'medium': 0, 'qty_total': 0},
             'sell': {'medium': 0, 'qty_total': 0}
@@ -83,7 +85,7 @@ def get_order_history(filename):
         order_list = order_list + t.order_list
         buy_sell_orders |= t.buy_sell_orders
     f = open(filename, "a")
-    f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
+    f.write(tabulate(order_list, headers=['DATE', 'TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
     return buy_sell_orders
 

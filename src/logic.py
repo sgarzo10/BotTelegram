@@ -135,41 +135,43 @@ def evm_balance(soglia, wallet):
 
 
 def ape_wallet_balance(soglia, passcode, wallet):
-    ape_wallet = {
-        wallet['chain']: {
-            'wallet': {},
-            "platform": {}
-        }
-    }
+    ape_wallet = {}
     endpoint_base = "https://api.apeboard.finance/"
-    resp = {}
-    while resp == {}:
-        req = make_request(f"{endpoint_base}wallet/{wallet['chain']}/{wallet['wallet']}", api_apeboard=passcode)
-        if str(req['response']).find("HTTP Error 500") == -1 and str(req['response']).find("HTTP Error 503") == -1:
-            resp = loads(req['response'])
-    for c in resp:
-        if c['balance'] * c['price'] > soglia:
-            ape_wallet[wallet['chain']]['wallet'][str.upper(c['symbol'])] = c['balance']
-    for p in wallet['platform']:
-        ape_wallet[wallet['chain']]['platform'][p] = {}
+    for ch in wallet['chain']:
+        ape_wallet[ch] = {
+                'wallet': {},
+                "platform": {}
+            }
         resp = {}
         while resp == {}:
-            req = make_request(f"{endpoint_base}{p}/{wallet['wallet']}", api_apeboard=passcode)
+            req = make_request(f"{endpoint_base}wallet/{ch}/{wallet['wallet']}", api_apeboard=passcode)
             if str(req['response']).find("HTTP Error 500") == -1 and str(req['response']).find("HTTP Error 503") == -1:
                 resp = loads(req['response'])
-        nkey = ''
-        if 'savings' in list(resp.keys()):
-            nkey = 'savings'
-        if 'farms' in list(resp.keys()) and nkey == '':
-            nkey = 'farms'
-        for s in resp[nkey]:
-            for t in s['tokens']:
-                if str.upper(t['symbol']) == 'AUST':
-                    t['balance'] = t['balance'] * t['price']
-                ape_wallet = sum_platform_token(ape_wallet, wallet['chain'], p, t['symbol'], t['balance'])
-            if 'rewards' in list(s.keys()):
-                for r in s['rewards']:
-                    ape_wallet = sum_platform_token(ape_wallet, wallet['chain'], p, r['symbol'], r['balance'])
+        for c in resp:
+            if c['balance'] * c['price'] > soglia:
+                ape_wallet[ch]['wallet'][str.upper(c['symbol'])] = c['balance']
+        for p in wallet['platform']:
+            if p.split("-")[0] == ch:
+                p = p.split("-")[1]
+                ape_wallet[ch]['platform'][p] = {}
+                resp = {}
+                while resp == {}:
+                    req = make_request(f"{endpoint_base}{p}/{wallet['wallet']}", api_apeboard=passcode)
+                    if str(req['response']).find("HTTP Error 500") == -1 and str(req['response']).find("HTTP Error 503") == -1:
+                        resp = loads(req['response'])
+                nkey = 'delegation'
+                if 'farms' in list(resp.keys()):
+                    nkey = 'farms'
+                if 'savings' in list(resp.keys()):
+                    nkey = 'savings'
+                for s in resp[nkey]:
+                    for t in s['tokens']:
+                        if str.upper(t['symbol']) == 'AUST':
+                            t['balance'] = t['balance'] * t['price']
+                        ape_wallet = sum_platform_token(ape_wallet, ch, p, t['symbol'], t['balance'])
+                    if 'rewards' in list(s.keys()):
+                        for r in s['rewards']:
+                            ape_wallet = sum_platform_token(ape_wallet, ch, p, r['symbol'], r['balance'])
     return ape_wallet
 
 
@@ -187,7 +189,12 @@ def get_spot_funding_and_locked_balance():
     resp = make_binance_request("api/v3/account",  params)
     for coin in resp["balances"]:
         if float(coin["free"]) + float(coin["locked"]) > 0:
-            to_ret["binance"]["wallet"][coin["asset"]] = float(coin["free"]) + float(coin["locked"])
+            if coin["asset"].find("LD") == 0:
+                coin["asset"] = coin["asset"][2:]
+            if coin["asset"] in to_ret["binance"]["wallet"]:
+                to_ret["binance"]["wallet"][coin["asset"]] += float(coin["free"]) + float(coin["locked"])
+            else:
+                to_ret["binance"]["wallet"][coin["asset"]] = float(coin["free"]) + float(coin["locked"])
     resp = make_binance_request("sapi/v1/asset/get-funding-asset", params, body={})
     for c in resp:
         to_ret['binance']['platform']['funding'][c['asset']] = float(c["free"]) + float(c["locked"])
@@ -199,11 +206,11 @@ def get_spot_funding_and_locked_balance():
 def get_wallet_token():
     total_wallet = {'USD': 0}
     wallet_list = {}
-    soglia = 0.5
+    soglia = 0.1
     passcode = get_passcode_apewallet()
     wallet_list['binance'] = get_spot_funding_and_locked_balance()
     for key, value in Config.settings['defi'].items():
-        if isinstance(value['chain'], list):
+        if value['wallet'].find("0x") == 0:
             wallet_list[key] = evm_balance(soglia, value)
         else:
             wallet_list[key] = ape_wallet_balance(soglia, passcode, value)
