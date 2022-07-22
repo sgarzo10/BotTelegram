@@ -180,7 +180,7 @@ def prepare_output(output_data, file_name_order, file_name_pdf):
     for asset in output_data['actual_list']:
         if asset[5] > 0:
             assets_list_tg.append([asset[0], asset[3], asset[4], asset[5], asset[8]])
-    return f"{tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt='.4f')}\n\n\nTOTAL MARGIN: {str(gain)}€"
+    return f"{tabulate(assets_list_tg, headers=['ASSET', 'AVG BUY', 'ACTUAL', 'BUDGET', 'FINAL MARGIN'], tablefmt='orgtbl', floatfmt='.4f')}\n\n\nDEP: {round(output_data['total_deposit_eur'], 2)}€   NOW: {round(output_data['total_eur'], 2)}€   MARG: {str(gain)}€"
 
 
 def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
