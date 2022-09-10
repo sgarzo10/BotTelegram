@@ -104,7 +104,7 @@ def calculate_budget_coin(buy_sell_orders, total_wallet):
 def prepare_url_coinmarketcap(buy_sell_orders, coin):
     url = f'{Config.settings["coinmarketcap"]["price_url"]}{Config.settings["coinmarketcap"]["key"]}&convert={coin}&slug='
     for key in buy_sell_orders.keys():
-        if Config.settings['binance']["symbols"][key][:2] != '0x':
+        if Config.settings['binance']["symbols"][key][:2] != '0x' and buy_sell_orders[key] :
             url += Config.settings['binance']["symbols"][key] + ","
     return url[:-1]
 
@@ -198,10 +198,9 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
     coins = list(buy_sell_orders.keys())
     coins.remove('EURBUSD')
     for key in coins:
-        value_and_ath = get_ath_and_value(res_conv, key, coin)
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
-        total_margin, actual_margin, sell_mining = 0, 0, 0
+        total_margin, actual_margin, sell_mining, sell_now = 0, 0, 0, 0
         actual_budget = calculate_budget_coin(buy_sell_orders[key], total_wallet[key.replace("BUSD", "")] if key.replace("BUSD", "") in total_wallet.keys() else 0)
         if buy_sell_orders[key]['sell']['qty_total'] > 0 or actual_budget['fee'] > 0:
             if buy_sell_orders[key]['sell']['qty_total'] > buy_sell_orders[key]['buy']['qty_total']:
@@ -209,18 +208,19 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
                 sell_mining = buy_sell_orders[key]['sell']['qty_total'] - buy_sell_orders[key]['buy']['qty_total']
             else:
                 total_margin = total_return - ((buy_sell_orders[key]['sell']['qty_total'] + actual_budget['fee']) * buy_sell_orders[key]['buy']['medium'])
-        sell_now = actual_budget['budget'] * value_and_ath['actual_value']
-        output_data['total_balance'] += sell_now
+        if actual_budget['budget'] > 0 or actual_budget['mining'] - sell_mining > 0:
+            value_and_ath = get_ath_and_value(res_conv, key, coin)
+            sell_now = actual_budget['budget'] * value_and_ath['actual_value']
         if actual_budget['budget'] > 0:
+            output_data['total_balance'] += sell_now
             output_data['percs_wall'].append({'perc': sell_now, 'label': key.replace("BUSD", "") + " - " + str(round(sell_now, 2)) + "$ "})
             if sell_mining > 0:
                 actual_margin = sell_now
             else:
                 actual_margin = (sell_now - (actual_budget['mining'] * value_and_ath['actual_value'])) - ((actual_budget['budget'] - actual_budget['mining']) * buy_sell_orders[key]['buy']['medium'])
-        if sell_mining > 0:
-            final_margin = actual_margin + total_margin
-        else:
-            final_margin = actual_margin + total_margin + ((actual_budget['mining'] - sell_mining) * value_and_ath['actual_value'])
+        final_margin = actual_margin + total_margin
+        if actual_budget['mining'] > 0:
+            final_margin += actual_budget['mining'] * value_and_ath['actual_value']
         my_actual_mid_buy = 0
         real_actual_mid_buy = 0
         my_actual_invest = 0
