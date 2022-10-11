@@ -200,38 +200,30 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
     for key in coins:
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
-        total_margin, actual_margin, sell_mining, sell_now = 0, 0, 0, 0
+        total_margin, actual_margin, sell_mining, sell_now, sell_now_mining = 0, 0, 0, 0, 0
+        my_actual_mid_buy, real_actual_mid_buy, my_actual_invest = 0, 0, 0
         actual_budget = calculate_budget_coin(buy_sell_orders[key], total_wallet[key.replace("BUSD", "")] if key.replace("BUSD", "") in total_wallet.keys() else 0)
         if buy_sell_orders[key]['sell']['qty_total'] > 0 or actual_budget['fee'] > 0:
             if buy_sell_orders[key]['sell']['qty_total'] > buy_sell_orders[key]['buy']['qty_total']:
                 total_margin = total_return - total_invest - (actual_budget['fee'] * buy_sell_orders[key]['buy']['medium'])
-                sell_mining = buy_sell_orders[key]['sell']['qty_total'] - buy_sell_orders[key]['buy']['qty_total']
             else:
                 total_margin = total_return - ((buy_sell_orders[key]['sell']['qty_total'] + actual_budget['fee']) * buy_sell_orders[key]['buy']['medium'])
-        if actual_budget['budget'] > 0 or actual_budget['mining'] - sell_mining > 0:
+        final_margin = total_margin
+        if actual_budget['budget'] > 0:
             value_and_ath = get_ath_and_value(res_conv, key, coin)
             sell_now = actual_budget['budget'] * value_and_ath['actual_value']
-        if actual_budget['budget'] > 0:
-            output_data['total_balance'] += sell_now
-            output_data['percs_wall'].append({'perc': sell_now, 'label': key.replace("BUSD", "") + " - " + str(round(sell_now, 2)) + "$ "})
-            if sell_mining > 0:
-                actual_margin = sell_now
-            else:
-                actual_margin = (sell_now - (actual_budget['mining'] * value_and_ath['actual_value'])) - ((actual_budget['budget'] - actual_budget['mining']) * buy_sell_orders[key]['buy']['medium'])
-        final_margin = actual_margin + total_margin
-        if actual_budget['mining'] > 0:
-            final_margin += actual_budget['mining'] * value_and_ath['actual_value']
-        my_actual_mid_buy = 0
-        real_actual_mid_buy = 0
-        my_actual_invest = 0
-        output_data['total_total_margin'] += final_margin
-        if actual_budget['budget'] > 0:
+            sell_now_mining = (actual_budget['mining'] if actual_budget['budget'] >= actual_budget['mining'] else actual_budget['budget']) * value_and_ath['actual_value']
             if total_invest - total_return > 0:
                 my_actual_invest = total_invest - total_return
                 my_actual_mid_buy = my_actual_invest / actual_budget['budget']
                 real_actual_mid_buy = my_actual_invest / (actual_budget['budget'] - actual_budget['mining'])
                 output_data['total_total_invest'] += my_actual_invest
+            actual_margin = sell_now - sell_now_mining - my_actual_invest
+            final_margin = actual_margin + sell_now_mining
+            output_data['total_balance'] += sell_now
+            output_data['percs_wall'].append({'perc': sell_now, 'label': key.replace("BUSD", "") + " - " + str(round(sell_now, 2)) + "$ "})
             output_data['actual_list'].append([key.replace("BUSD", ""), my_actual_invest, real_actual_mid_buy, my_actual_mid_buy, value_and_ath['actual_value'], actual_budget['budget'], sell_now, actual_margin, final_margin])
+        output_data['total_total_margin'] += final_margin
         output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], total_invest, total_return, total_margin, sell_now])
     i = 0
     while i < len(output_data['percs_wall']):
