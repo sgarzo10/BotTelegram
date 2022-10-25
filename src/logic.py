@@ -136,7 +136,7 @@ def evm_balance(soglia, wallet):
 
 def ape_wallet_balance(soglia, passcode, wallet):
     ape_wallet = {}
-    endpoint_base = "https://api.apeboard.finance/"
+    endpoint_base = "https://api.apeboard.finance/portfolio/"
     for ch in wallet['chain']:
         ape_wallet[ch] = {
                 'wallet': {},
