@@ -114,7 +114,7 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     to_ret = {}
     name = key.replace("BUSD", "")
     if key == "EURBUSD":
-        name = "CEUR"
+        name = "EUROC"
     if Config.settings['binance']["symbols"][key][:2] != '0x':
         for cry in res_conv:
             if cry['symbol'] == name:
