@@ -94,7 +94,6 @@ def get_invest_status(update, context):
     get_open_orders(order_file)
     buy_sell_orders = get_order_history(order_file)
     total_wallet, wallet_list = get_wallet_token()
-    total_wallet['card_eur'] = wallet_list['binance']['binance']['platform']['funding']['EUR']
     update.message.reply_text(get_wallet(buy_sell_orders, total_wallet, order_file, pdf_file))
     update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
     update.message.reply_document(open(order_file, 'r'))

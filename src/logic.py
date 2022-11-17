@@ -125,7 +125,7 @@ def evm_balance(soglia, wallet):
     ctx = loads(make_request(f"https://api.debank.com/portfolio/project_list?user_addr={wallet['wallet']}")['response'])
     for d in ctx['data']:
         evm_wallet[d['chain']]['platform'][d['name']] = {}
-        for p in d['portfolio_list']:
+        for p in d['portfolio_item_list']:
             for t in p['detail']['supply_token_list']:
                 evm_wallet = sum_platform_token(evm_wallet, d['chain'], d['name'], t['symbol'], t['amount'])
             if 'reward_token_list' in p['detail']:
@@ -186,7 +186,7 @@ def get_spot_funding_and_locked_balance():
         }
     }
     params = "timestamp=" + Config.settings["binance"]["time"]
-    resp = make_binance_request("api/v3/account",  params)
+    resp = make_binance_request("api/v3/account", params)
     for coin in resp["balances"]:
         if float(coin["free"]) + float(coin["locked"]) > 0:
             if coin["asset"].find("LD") == 0:
@@ -238,6 +238,7 @@ def get_wallet_token():
             for value in chain_info['platform'].values():
                 for key, balance in value.items():
                     total_wallet = sum_token_aggegate(total_wallet, key, balance)
+    total_wallet['card_eur'] = wallet_list['binance']['binance']['platform']['funding']['EUR']
     return total_wallet, wallet_list
 
 
