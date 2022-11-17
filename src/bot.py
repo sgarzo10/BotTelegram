@@ -93,6 +93,7 @@ def get_invest_status(update, context):
     Config.settings['binance']['time'] = get_server_time()
     get_open_orders(order_file)
     buy_sell_orders = get_order_history(order_file)
+    Config.settings['binance']['time'] = get_server_time()
     total_wallet, wallet_list = get_wallet_token()
     update.message.reply_text(get_wallet(buy_sell_orders, total_wallet, order_file, pdf_file))
     update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
