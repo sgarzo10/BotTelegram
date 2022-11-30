@@ -73,8 +73,8 @@ def be_status_generali():
         sell_all += sell
         assets_list.append([k, round(qty_total, 2), medium_buy, generali_now[k], round(invst_total, 2), sell, profit])
     rel_tot_invest = round(tot_invest * 2 + sum(Config.generali['fee']), 2)
-    balance = round(tot_invest + sell_all, 2)
-    margin = round(tot_profit - sum(Config.generali['fee']), 2)
+    balance = round(tot_invest + sell_all + sum(Config.generali['gain']), 2)
+    margin = round(balance - rel_tot_invest, 2)
     return tabulate(assets_list, headers=['FONDO', 'TOT BUY', 'AVG BUY', 'ACTUAL', 'TOT INVEST', 'SELL NOW', 'MARGIN'], tablefmt='orgtbl', floatfmt=".2f") + "\n\nTOTAL BALANCE: " + str(balance) + "   TOTAL INVEST: " + str(rel_tot_invest) + "   TOTAL MARGIN: " + str(margin)
 
 
