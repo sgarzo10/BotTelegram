@@ -200,7 +200,7 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
     for key in coins:
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
-        total_margin, actual_margin, sell_mining, sell_now, sell_now_mining = 0, 0, 0, 0, 0
+        total_margin, actual_margin, sell_mining, sell_now, sell_now_mining, total_margin_perc = 0, 0, 0, 0, 0, 0
         my_actual_mid_buy, real_actual_mid_buy, my_actual_invest = 0, 0, 0
         actual_budget = calculate_budget_coin(buy_sell_orders[key], total_wallet[key.replace("BUSD", "")] if key.replace("BUSD", "") in total_wallet.keys() else 0)
         if buy_sell_orders[key]['sell']['qty_total'] > 0 or actual_budget['fee'] > 0:
@@ -208,8 +208,14 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
                 total_margin = total_return - total_invest - (actual_budget['fee'] * buy_sell_orders[key]['buy']['medium'])
             else:
                 total_margin = total_return - ((buy_sell_orders[key]['sell']['qty_total'] + actual_budget['fee']) * buy_sell_orders[key]['buy']['medium'])
+        total_margin = round(total_margin, 2)
+        if total_invest > 0:
+            total_margin_perc = f' ({str(round((total_return - total_invest) / total_invest * 100, 2))}%)'
+        else:
+            total_margin_perc = ' (∞)'
         final_margin = total_margin
         if actual_budget['budget'] > 0:
+            total_margin_perc = ' (N.D.)'
             value_and_ath = get_ath_and_value(res_conv, key, coin)
             sell_now = actual_budget['budget'] * value_and_ath['actual_value']
             sell_now_mining = (actual_budget['mining'] if actual_budget['budget'] >= actual_budget['mining'] else actual_budget['budget']) * value_and_ath['actual_value']
@@ -219,12 +225,15 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
                 real_actual_mid_buy = my_actual_invest / (actual_budget['budget'] - actual_budget['mining'])
                 output_data['total_total_invest'] += my_actual_invest
             actual_margin = sell_now - sell_now_mining - my_actual_invest
-            final_margin = actual_margin + sell_now_mining
+            final_margin = round(actual_margin + sell_now_mining, 2)
+            final_margin_perc = ' (∞)'
+            if my_actual_invest > 0:
+                final_margin_perc = f' ({str(round((sell_now - my_actual_invest) / my_actual_invest * 100, 2))}%)'
             output_data['total_balance'] += sell_now
             output_data['percs_wall'].append({'perc': sell_now, 'label': key.replace("BUSD", "") + " - " + str(round(sell_now, 2)) + "$ "})
-            output_data['actual_list'].append([key.replace("BUSD", ""), my_actual_invest, real_actual_mid_buy, my_actual_mid_buy, value_and_ath['actual_value'], actual_budget['budget'], sell_now, actual_margin, final_margin])
+            output_data['actual_list'].append([key.replace("BUSD", ""), my_actual_invest, real_actual_mid_buy, my_actual_mid_buy, value_and_ath['actual_value'], actual_budget['budget'], sell_now, actual_margin, str(final_margin) + final_margin_perc])
         output_data['total_total_margin'] += final_margin
-        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], total_invest, total_return, total_margin, sell_now])
+        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], total_invest, total_return, str(total_margin) + total_margin_perc, sell_now])
     i = 0
     while i < len(output_data['percs_wall']):
         output_data['percs_wall'][i]['perc'] = (output_data['percs_wall'][i]['perc'] * 100) / output_data['total_balance']
