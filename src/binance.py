@@ -8,6 +8,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from numpy import array
 from threading import Thread
 from datetime import datetime
+from logging import info
 
 
 class BinanceThread (Thread):
@@ -19,10 +20,12 @@ class BinanceThread (Thread):
         self.buy_sell_orders = {}
 
     def run(self):
-        orders = make_binance_request("api/v3/myTrades", f"timestamp={Config.settings['binance']['time']}&symbol={self.key}")
+        orders = []
+        for stable in Config.settings['binance']['symbols'][self.key]['stablecoin']:
+            orders += make_binance_request("api/v3/myTrades", f"timestamp={Config.settings['binance']['time']}&symbol={self.key}{stable}")
         medium, qty_total, medium_sell, qty_total_sell = 0, 0, 0, 0
-        if self.key in Config.orders:
-            for order in Config.orders[self.key]:
+        if self.key + "BUSD" in Config.orders:
+            for order in Config.orders[self.key + "BUSD"]:
                 if order['type'] == 'BUY':
                     qty_total += order['amount']
                     medium += order['amount'] * order['value']
@@ -104,18 +107,18 @@ def calculate_budget_coin(buy_sell_orders, total_wallet):
 def prepare_url_coinmarketcap(buy_sell_orders, coin):
     url = f'{Config.settings["coinmarketcap"]["price_url"]}{Config.settings["coinmarketcap"]["key"]}&convert={coin}&slug='
     for key in buy_sell_orders.keys():
-        if Config.settings['binance']["symbols"][key][:2] != '0x' and buy_sell_orders[key] :
-            url += Config.settings['binance']["symbols"][key] + ","
+        if Config.settings['binance']["symbols"][key]['coinmarketcap'][:2] != '0x' and buy_sell_orders[key]:
+            url += Config.settings['binance']["symbols"][key]['coinmarketcap'] + ","
     return url[:-1]
 
 
 def get_ath_and_value(res_conv, key, coin, ath=False):
     cry = {}
     to_ret = {}
-    name = key.replace("BUSD", "")
-    if key == "EURBUSD":
-        name = "EUROC"
-    if Config.settings['binance']["symbols"][key][:2] != '0x':
+    name = key
+    if key == "EUR":
+        name = "CEUR"
+    if Config.settings['binance']["symbols"][key]['coinmarketcap'][:2] != '0x':
         for cry in res_conv:
             if cry['symbol'] == name:
                 break
@@ -124,8 +127,8 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
             to_ret['ath'] = res.split("<div>All Time High</div>")[1].split("<span>")[1].split("</span>")[0][1:]
         to_ret['actual_value'] = cry['quote'][coin]['price']
     else:
-        addr = Config.settings['binance']["symbols"][key].split("-")[0]
-        chain = Config.settings['binance']["symbols"][key].split("-")[1]
+        addr = Config.settings['binance']["symbols"]['coinmarketcap'][key].split("-")[0]
+        chain = Config.settings['binance']["symbols"]['coinmarketcap'][key].split("-")[1]
         res = be_get_token_defi_value({chain: {addr: name}})
         to_ret['actual_value'] = 0
         if name in res:
@@ -194,15 +197,16 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
         'total_balance': 0
     }
     coin = 'USD'
+    my_fiat = 'EUR'
     res_conv = list(loads(make_request(prepare_url_coinmarketcap(buy_sell_orders, coin))['response'])['data'].values())
     coins = list(buy_sell_orders.keys())
-    coins.remove('EURBUSD')
+    coins.remove(my_fiat)
     for key in coins:
         total_invest = buy_sell_orders[key]['buy']['qty_total'] * buy_sell_orders[key]['buy']['medium']
         total_return = buy_sell_orders[key]['sell']['qty_total'] * buy_sell_orders[key]['sell']['medium']
         total_margin, actual_margin, sell_mining, sell_now, sell_now_mining, total_margin_perc = 0, 0, 0, 0, 0, 0
         my_actual_mid_buy, real_actual_mid_buy, my_actual_invest = 0, 0, 0
-        actual_budget = calculate_budget_coin(buy_sell_orders[key], total_wallet[key.replace("BUSD", "")] if key.replace("BUSD", "") in total_wallet.keys() else 0)
+        actual_budget = calculate_budget_coin(buy_sell_orders[key], total_wallet[key] if key in total_wallet.keys() else 0)
         if buy_sell_orders[key]['sell']['qty_total'] > 0 or actual_budget['fee'] > 0:
             if buy_sell_orders[key]['sell']['qty_total'] > buy_sell_orders[key]['buy']['qty_total']:
                 total_margin = total_return - total_invest - (actual_budget['fee'] * buy_sell_orders[key]['buy']['medium'])
@@ -230,30 +234,30 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
             if my_actual_invest > 0:
                 final_margin_perc = f' ({str(round((sell_now - my_actual_invest) / my_actual_invest * 100, 2))}%)'
             output_data['total_balance'] += sell_now
-            output_data['percs_wall'].append({'perc': sell_now, 'label': key.replace("BUSD", "") + " - " + str(round(sell_now, 2)) + "$ "})
-            output_data['actual_list'].append([key.replace("BUSD", ""), my_actual_invest, real_actual_mid_buy, my_actual_mid_buy, value_and_ath['actual_value'], actual_budget['budget'], sell_now, actual_margin, str(final_margin) + final_margin_perc])
+            output_data['percs_wall'].append({'perc': sell_now, 'label': key + " - " + str(round(sell_now, 2)) + "$ "})
+            output_data['actual_list'].append([key, my_actual_invest, real_actual_mid_buy, my_actual_mid_buy, value_and_ath['actual_value'], actual_budget['budget'], sell_now, actual_margin, str(final_margin) + final_margin_perc])
         output_data['total_total_margin'] += final_margin
-        output_data['assets_list'].append([key.replace("BUSD", ""), actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], total_invest, total_return, str(total_margin) + total_margin_perc, sell_now])
+        output_data['assets_list'].append([key, actual_budget['mining'] - actual_budget['fee'], buy_sell_orders[key]['buy']['qty_total'], buy_sell_orders[key]['sell']['qty_total'], buy_sell_orders[key]['buy']['medium'], buy_sell_orders[key]['sell']['medium'], total_invest, total_return, str(total_margin) + total_margin_perc, sell_now])
     i = 0
     while i < len(output_data['percs_wall']):
         output_data['percs_wall'][i]['perc'] = (output_data['percs_wall'][i]['perc'] * 100) / output_data['total_balance']
         output_data['percs_wall'][i]['label'] += f"({round(output_data['percs_wall'][i]['perc'], 2)}%)"
         i += 1
-    eur_value = get_ath_and_value(res_conv, "EURBUSD", coin)['actual_value']
-    total_invest = buy_sell_orders["EURBUSD"]['sell']['qty_total'] * buy_sell_orders["EURBUSD"]['sell']['medium']
-    total_return = buy_sell_orders["EURBUSD"]['buy']['qty_total'] * buy_sell_orders["EURBUSD"]['buy']['medium']
-    total_margin = (buy_sell_orders["EURBUSD"]['buy']['qty_total'] * buy_sell_orders["EURBUSD"]['sell']['medium']) - total_return
-    sell_now = total_wallet['USD'] / eur_value
-    m = sell_now - (total_wallet['USD'] / buy_sell_orders["EURBUSD"]['sell']['medium'])
-    output_data['eur_gain_total'] = [["USD", total_invest, total_return, 1 / buy_sell_orders["EURBUSD"]['sell']['medium'], 1 / buy_sell_orders["EURBUSD"]['buy']['medium'], buy_sell_orders["EURBUSD"]['sell']['qty_total'], buy_sell_orders["EURBUSD"]['buy']['qty_total'], total_margin, sell_now]]
-    output_data['eur_gain_actual'] = [["USD", 1 / eur_value, total_wallet['USD'], sell_now, m]]
+    eur_value = get_ath_and_value(res_conv, my_fiat, coin)['actual_value']
+    total_invest = buy_sell_orders[my_fiat]['sell']['qty_total'] * buy_sell_orders[my_fiat]['sell']['medium']
+    total_return = buy_sell_orders[my_fiat]['buy']['qty_total'] * buy_sell_orders[my_fiat]['buy']['medium']
+    total_margin = (buy_sell_orders[my_fiat]['buy']['qty_total'] * buy_sell_orders[my_fiat]['sell']['medium']) - total_return
+    sell_now = total_wallet[coin] / eur_value
+    m = sell_now - (total_wallet[coin] / buy_sell_orders[my_fiat]['sell']['medium'])
+    output_data['eur_gain_total'] = [[coin, total_invest, total_return, 1 / buy_sell_orders[my_fiat]['sell']['medium'], 1 / buy_sell_orders[my_fiat]['buy']['medium'], buy_sell_orders[my_fiat]['sell']['qty_total'], buy_sell_orders[my_fiat]['buy']['qty_total'], total_margin, sell_now]]
+    output_data['eur_gain_actual'] = [[coin, 1 / eur_value, total_wallet[coin], sell_now, m]]
     output_data['total_total_margin_eur'] = output_data['total_total_margin'] / eur_value
     output_data['total_total_invest_eur'] = output_data['total_total_invest'] / eur_value
-    output_data['total_balance_stable'] = total_wallet['USD']
+    output_data['total_balance_stable'] = total_wallet[coin]
     output_data['total_balance_crypto_eur'] = output_data['total_balance'] / eur_value
     output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / eur_value
     output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]) + total_wallet['card_eur']
-    output_data['total_balance_eur'] = total_wallet['EUR']
+    output_data['total_balance_eur'] = total_wallet[my_fiat]
     output_data['total_eur'] = output_data['total_balance_eur'] + output_data['total_balance_stable_eur'] + output_data['total_balance_crypto_eur']
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_crypto_eur'] * 100) / output_data['total_eur'], "label": f"CRYPTO perc\n{round(output_data['total_balance_crypto_eur'], 2)}€"})
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_stable_eur'] * 100) / output_data['total_eur'], "label": f"STABLE perc\n{round(output_data['total_balance_stable_eur'], 2)}€"})
