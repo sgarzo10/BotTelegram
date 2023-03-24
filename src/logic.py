@@ -39,12 +39,13 @@ def be_youtube_download(canzoni):
 
 
 def be_status_generali():
-    resp = unescape(str(make_request("https://www.generali.it/quotazioni/genera-sviluppo-sostenibile")['response']))
     nomi = []
     valori = []
-    for r in resp.split("<h2 class=\"h4 font-weight-bold\">")[1:]:
+    resp = unescape(str(make_request("https://www.generali.it/quotazioni/genera-sviluppo-sostenibile")['response']))
+    resp += unescape(str(make_request("https://www.generali.it/quotazioni/fondi-interni")['response']))
+    for r in resp.split("<h2 class=\"h4 font-weight-bold\">")[1:8]:
         nomi.append(r.split("</h2>")[0])
-    for r in resp.split("quotazioni-specifiche__value__number\">")[1:]:
+    for r in resp.split("quotazioni-specifiche__value__number\">")[1:8]:
         valori.append(r.split(" </span>")[0])
     i = 0
     generali_now = {}
