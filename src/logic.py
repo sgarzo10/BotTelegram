@@ -239,7 +239,9 @@ def get_wallet_token():
             for value in chain_info['platform'].values():
                 for key, balance in value.items():
                     total_wallet = sum_token_aggegate(total_wallet, key, balance)
-    total_wallet['card_eur'] = wallet_list['binance']['binance']['platform']['funding']['EUR']
+    total_wallet['card_eur'] = 0
+    if 'EUR' in wallet_list['binance']['binance']['platform']['funding']:
+        total_wallet['card_eur'] = wallet_list['binance']['binance']['platform']['funding']['EUR']
     return total_wallet, wallet_list
 
 

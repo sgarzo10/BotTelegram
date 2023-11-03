@@ -117,7 +117,7 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     to_ret = {}
     name = key
     if key == "EUR":
-        name = "CEUR"
+        name = "EURC"
     if Config.settings['binance']["symbols"][key]['coinmarketcap'][:2] != '0x':
         for cry in res_conv:
             if cry['symbol'] == name:
@@ -194,7 +194,8 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
         'percs_wall_eur': [],
         'total_total_invest': 0,
         'total_total_margin': 0,
-        'total_balance': 0
+        'total_balance': 0,
+        'total_balance_eur': 0
     }
     coin = 'USD'
     my_fiat = 'EUR'
@@ -257,7 +258,8 @@ def get_wallet(buy_sell_orders, total_wallet, file_name_order, file_name_pdf):
     output_data['total_balance_crypto_eur'] = output_data['total_balance'] / eur_value
     output_data['total_balance_stable_eur'] = output_data['total_balance_stable'] / eur_value
     output_data['total_deposit_eur'] = sum(Config.settings["binance"]["deposits"]) - sum(Config.settings["binance"]["card"]) + total_wallet['card_eur']
-    output_data['total_balance_eur'] = total_wallet[my_fiat]
+    if my_fiat in total_wallet:
+        output_data['total_balance_eur'] = total_wallet[my_fiat]
     output_data['total_eur'] = output_data['total_balance_eur'] + output_data['total_balance_stable_eur'] + output_data['total_balance_crypto_eur']
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_crypto_eur'] * 100) / output_data['total_eur'], "label": f"CRYPTO perc\n{round(output_data['total_balance_crypto_eur'], 2)}€"})
     output_data['percs_wall_eur'].append({"perc": (output_data['total_balance_stable_eur'] * 100) / output_data['total_eur'], "label": f"STABLE perc\n{round(output_data['total_balance_stable_eur'], 2)}€"})
