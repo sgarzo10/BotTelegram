@@ -187,11 +187,12 @@ def get_spot_funding_and_locked_balance():
         }
     }
     params = "timestamp=" + Config.settings["binance"]["time"]
+    resp = make_binance_request("sapi/v1/simple-earn/flexible/position", params)
+    for r in resp['rows']:
+        to_ret["binance"]["wallet"][r["asset"]] = float(r["totalAmount"])
     resp = make_binance_request("api/v3/account", params)
     for coin in resp["balances"]:
-        if float(coin["free"]) + float(coin["locked"]) > 0:
-            if coin["asset"].find("LD") == 0:
-                coin["asset"] = coin["asset"][2:]
+        if float(coin["free"]) + float(coin["locked"]) > 0 and coin["asset"].find("LD") == -1:
             if coin["asset"] in to_ret["binance"]["wallet"]:
                 to_ret["binance"]["wallet"][coin["asset"]] += float(coin["free"]) + float(coin["locked"])
             else:
