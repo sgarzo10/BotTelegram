@@ -117,7 +117,7 @@ def get_ath_and_value(res_conv, key, coin, ath=False):
     to_ret = {}
     name = key
     if key == "EUR":
-        name = "EURC"
+        name = "AEUR"
     if Config.settings['binance']["symbols"][key]['coinmarketcap'][:2] != '0x':
         for cry in res_conv:
             if cry['symbol'] == name:
