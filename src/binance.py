@@ -62,14 +62,14 @@ make_binance_request("sapi/v1/lending/union/interestHistory", "lendingType=CUSTO
 
 
 def get_open_orders(filename):
-    f = open(filename, "w")
+    f = open(filename, "w", encoding="utf-8")
     f.write("")
     f.close()
     orders = make_binance_request("api/v3/openOrders", f"timestamp={Config.settings['binance']['time']}")
     order_list = []
     for order in orders:
         order_list.append([order['side'], order['symbol'], order['price'], order['origQty'], str(float(order['price']) * float(order['origQty']))])
-    f = open(filename, "a")
+    f = open(filename, "a", encoding="utf-8")
     f.write(tabulate(order_list, headers=['TYPE', 'ASSET', 'PRICE', 'QTY', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
 
@@ -87,7 +87,7 @@ def get_order_history(filename):
         t.join()
         order_list = order_list + t.order_list
         buy_sell_orders |= t.buy_sell_orders
-    f = open(filename, "a")
+    f = open(filename, "a", encoding="utf-8")
     f.write(tabulate(order_list, headers=['DATE', 'TYPE', 'ASSET', 'PRICE', 'QTY', 'FEE', 'TOTAL'], tablefmt='orgtbl', floatfmt=".8f") + "\n\n\n")
     f.close()
     return buy_sell_orders
@@ -165,7 +165,7 @@ def prepare_output(output_data, file_name_order, file_name_pdf):
     head_actual_list = ['ASSET', 'ACT INVEST', 'REAL AVG BUY', 'ACT AVG BUY', 'ACT PRICE', 'BUDGET', 'SELL NOW', 'MARGIN', 'FINAL MARGIN']
     head_usd = ["COIN", "TOT BUY", "TOT SELL", "AVG BUY", "AVG SELL", "TOT EUR INVEST", "TOT EUR RETURN", "TOTAL MARGIN", "SELL NOW"]
     head_actual_usd = ["COIN", "ACTUAL PRICE", "BUDGET", "SELL NOW", "FINAL MARGIN"]
-    f = open(file_name_order, "a")
+    f = open(file_name_order, "a", encoding="utf-8")
     f.write(tabulate(output_data['assets_list'], headers=head_asset_list, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +
             tabulate(output_data['actual_list'], headers=head_actual_list, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +
             tabulate(output_data['eur_gain_total'], headers=head_usd, tablefmt='orgtbl', floatfmt=".6f") + "\n\n\n" +

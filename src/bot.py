@@ -1,5 +1,5 @@
 from telegram import ReplyKeyboardMarkup
-from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, MessageHandler
+from telegram.ext import Application, filters, CommandHandler, CallbackQueryHandler, MessageHandler
 from logging import basicConfig, INFO, exception
 from utility import make_cmd, markdown_text, Config, get_separator, initial_log, make_button_list, get_server_time, generate_string_wallet
 from logic import be_get_public_ip, be_get_file_ovpn, get_nvidia_info, be_stop_miner, be_stop_server_vpn, get_program_status, be_set_trex_profile, be_start_access_point, be_stop_access_point, be_get_access_point_status, be_set_gpu_speed_fan, be_shutdown_system, get_meross_info, get_trex_info, get_miner_info, be_get_link_event, be_get_token_defi_value, be_get_link_acestream, be_status_generali, be_youtube_download, get_wallet_token
@@ -10,29 +10,29 @@ from re import escape
 from os import remove
 
 
-def download_youtube_music(update, context):
+async def download_youtube_music(update, context):
     initial_log("download_youtube_music", context.args)
     Config.download = True
-    update.message.reply_text("INVIARE LISTA CANZONI")
+    await update.message.reply_text("INVIARE LISTA CANZONI")
 
 
-def download_music(update, context):
+async def download_music(update, context):
     initial_log("download_music", context.args)
     if Config.download:
         file_name = "canzoni.zip"
         Config.download = False
         be_youtube_download(update.message.text)
-        update.message.reply_document(open(file_name, 'rb'), timeout=10000)
+        await update.message.reply_document(open(file_name, 'rb'), timeout=10000)
         remove(file_name)
 
 
-def update_config(update, context):
+async def update_config(update, context):
     initial_log("update_config", context.args)
     Config.update_conf = True
-    update.message.reply_text("INVIARE IL FILE")
+    await update.message.reply_text("INVIARE IL FILE")
 
 
-def doc_handler(update, context):
+async def doc_handler(update, context):
     initial_log("doc_handler", context)
     if update.message.document.file_name in Config.settings['config_doc'] and update.message.document.mime_type == "application/json":
         if Config.update_conf:
@@ -42,51 +42,51 @@ def doc_handler(update, context):
             to_ret = "FILE DI CONFIGURAZIONE AGGIORNATO!"
         else:
             to_ret = "AGGIORNAMENTO FILE DI CONFIGURAZIONE NON ABILITATO!"
-        update.message.reply_text(to_ret)
+        await update.message.reply_text(to_ret)
 
 
-def reload_config(update, context):
+async def reload_config(update, context):
     initial_log("reload_config", context.args)
     Config().reload()
-    update.message.reply_text("FILE DI CONFIGURAZIONE RICARICATI!")
+    await update.message.reply_text("FILE DI CONFIGURAZIONE RICARICATI!")
 
 
-def get_config(update, context):
+async def get_config(update, context):
     initial_log("get_config", context.args)
     for d in Config.settings['config_doc']:
-        update.message.reply_document(open(f'../config/{d}', 'r'))
+        await update.message.reply_document(open(f'../config/{d}', 'r'))
 
 
-def status_generali(update, context):
+async def status_generali(update, context):
     initial_log("status_generali", context.args)
-    update.message.reply_text(be_status_generali())
+    await update.message.reply_text(be_status_generali())
 
 
-def get_public_ip(update, context):
+async def get_public_ip(update, context):
     initial_log("get_public_ip", context.args)
-    update.message.reply_text(be_get_public_ip())
+    await update.message.reply_text(be_get_public_ip())
 
 
-def get_file_ovpn(update, context):
+async def get_file_ovpn(update, context):
     initial_log("get_file_ovpn", context.args)
     file_name = "client.ovpn"
     response = be_get_file_ovpn(file_name)
     if response == "OK":
-        update.message.reply_document(open(file_name, 'r'))
+        await update.message.reply_document(open(file_name, 'r'))
         remove(file_name)
     else:
-        update.message.reply_text(response)
+        await update.message.reply_text(response)
 
 
-def get_value_token_defi(update, context):
+async def get_value_token_defi(update, context):
     initial_log("get_value_token_defi", context.args)
     response = ""
     for key, value in be_get_token_defi_value(Config.token.copy()).items():
         response += f"*{key}:* {str(value)}$\n"
-    update.message.reply_text(markdown_text(response), parse_mode='MarkdownV2')
+    await update.message.reply_text(markdown_text(response), parse_mode='MarkdownV2')
 
 
-def get_invest_status(update, context):
+async def get_invest_status(update, context):
     initial_log("get_invest_status", context.args)
     order_file = 'order-wallet.txt'
     pdf_file = 'wallet-allocation.pdf'
@@ -95,22 +95,22 @@ def get_invest_status(update, context):
     buy_sell_orders = get_order_history(order_file)
     Config.settings['binance']['time'] = get_server_time()
     total_wallet, wallet_list = get_wallet_token()
-    update.message.reply_text(get_wallet(buy_sell_orders, total_wallet, order_file, pdf_file))
-    update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
-    update.message.reply_document(open(order_file, 'r'))
-    update.message.reply_document(open(pdf_file, 'rb'))
+    await update.message.reply_text(get_wallet(buy_sell_orders, total_wallet, order_file, pdf_file))
+    await update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
+    await update.message.reply_document(open(order_file, 'r', encoding='utf-8'))
+    await update.message.reply_document(open(pdf_file, 'rb'))
     remove(order_file)
     remove(pdf_file)
 
 
-def get_balance_wallet(update, context):
+async def get_balance_wallet(update, context):
     initial_log("get_balance_wallet", context.args)
     Config.settings['binance']['time'] = get_server_time()
     total_wallet, wallet_list = get_wallet_token()
-    update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
+    await update.message.reply_text(markdown_text(generate_string_wallet(wallet_list)), parse_mode='MarkdownV2')
 
 
-def get_mining_status(update, context):
+async def get_mining_status(update, context):
     initial_log("get_mining_status", context.args)
     try:
         pow_str = ""
@@ -172,18 +172,18 @@ def get_mining_status(update, context):
             invalid_shares = miner_info['invalid_shares'] + "*I*"
         work_str = get_separator("WORKER") + total_reported_hashrate + " " + current_hashrate + " " + average_hashrate + "\n"
         work_str = work_str + active_worker + " " + valid_shares + " " + stale_shares + " " + invalid_shares
-        update.message.reply_text(markdown_text(pow_str + general_str + gpu_str + pay_str + work_str), parse_mode='MarkdownV2')
+        await update.message.reply_text(markdown_text(pow_str + general_str + gpu_str + pay_str + work_str), parse_mode='MarkdownV2')
     except Exception as e:
         exception(e)
-        update.message.reply_text("ERRORE: " + str(e))
+        await update.message.reply_text("ERRORE: " + str(e))
 
 
-def stop_miner(update, context):
+async def stop_miner(update, context):
     initial_log("stop_miner", context.args)
-    update.message.reply_text(be_stop_miner())
+    await update.message.reply_text(be_stop_miner())
 
 
-def shutdown_system(update, context):
+async def shutdown_system(update, context):
     initial_log("shutdown_system", context.args)
     vpn = get_program_status("openvpn-gui", "OPENVPN")
     if vpn.find("ACCESO") > -1:
@@ -201,26 +201,26 @@ def shutdown_system(update, context):
     else:
         ret_str = ret_str + 'AP ' + ap['status'] + "\n"
     ret_str = ret_str + be_shutdown_system()
-    update.message.reply_text(ret_str)
+    await update.message.reply_text(ret_str)
 
 
-def start_server_vpn(update, context):
+async def start_server_vpn(update, context):
     initial_log("start_server_vpn", context.args)
     make_cmd("start openvpn-gui --connect server.ovpn", sys=True)
-    update.message.reply_text("SERVER VPN ACCESO")
+    await update.message.reply_text("SERVER VPN ACCESO")
 
 
-def stop_server_vpn(update, context):
+async def stop_server_vpn(update, context):
     initial_log("stop_server_vpn", context.args)
-    update.message.reply_text(be_stop_server_vpn())
+    await update.message.reply_text(be_stop_server_vpn())
 
 
-def get_status_server_vpn(update, context):
+async def get_status_server_vpn(update, context):
     initial_log("get_status_server_vpn", context.args)
-    update.message.reply_text(get_program_status("openvpn-gui", "OPENVPN"))
+    await update.message.reply_text(get_program_status("openvpn-gui", "OPENVPN"))
 
 
-def get_trex_profiles(update, context):
+async def get_trex_profiles(update, context):
     initial_log("get_trex_profile", context.args)
     ret_str = ""
     first = True
@@ -235,38 +235,38 @@ def get_trex_profiles(update, context):
         pool_url = "*POOL URL:* " + value['pool_url']
         wallet_id = "*WALLET ID:* " + value['wallet']
         ret_str += f"{name} {crypto}\n{intensity}\n{pool_url}\n{wallet_id}\n"
-    update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
+    await update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
 
 
-def start_miner(update, context):
+async def start_miner(update, context):
     initial_log("start_miner", context.args)
     make_cmd(f"start t-rex.exe -c {Config.settings['trex']['path_config']}", sys=True)
-    update.message.reply_text("MINER ATTIVATO")
+    await update.message.reply_text("MINER ATTIVATO")
 
 
-def set_trex_profile(update, context):
+async def set_trex_profile(update, context):
     if context.args is not None or (update.message is not None and update.message.text[:1] != '/'):
         initial_log("set_trex_profile", context.args)
-        update.message.reply_text("SCEGLI UN PROFILO", reply_markup=make_button_list(list(Config.settings['trex']['profiles'].keys()), "set_trex_profile "))
+        await update.message.reply_text("SCEGLI UN PROFILO", reply_markup=make_button_list(list(Config.settings['trex']['profiles'].keys()), "set_trex_profile "))
     else:
         callback_data = update.callback_query.data
         initial_log("set_trex_profile", callback_data.split(" ")[1:])
         update.callback_query.answer()
         ret_str = be_set_trex_profile(callback_data.replace("set_trex_profile ", ""))
-        update.callback_query.message.edit_text(text=ret_str)
+        await update.callback_query.message.edit_text(text=ret_str)
 
 
-def start_access_point(update, context):
+async def start_access_point(update, context):
     initial_log("start_access_point", context.args)
-    update.message.reply_text(be_start_access_point())
+    await update.message.reply_text(be_start_access_point())
 
 
-def stop_access_point(update, context):
+async def stop_access_point(update, context):
     initial_log("stop_access_point", context.args)
-    update.message.reply_text(be_stop_access_point())
+    await update.message.reply_text(be_stop_access_point())
 
 
-def get_access_point_status(update, context):
+async def get_access_point_status(update, context):
     initial_log("get_access_point_status", context.args)
     try:
         response = be_get_access_point_status()
@@ -279,13 +279,13 @@ def get_access_point_status(update, context):
                     ret_str = ret_str + "\n*MAC:* " + key + " *IP:* " + value
         else:
             ret_str = response["status"]
-        update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
+        await update.message.reply_text(markdown_text(ret_str), parse_mode='MarkdownV2')
     except Exception as e:
         exception(e)
-        update.message.reply_text("ERRORE: " + str(e))
+        await update.message.reply_text("ERRORE: " + str(e))
 
 
-def set_gpu_speed_fan(update, context):
+async def set_gpu_speed_fan(update, context):
     if context.args is not None or (update.message is not None and update.message.text[:1] != '/'):
         initial_log("set_gpu_speed_fan", context.args)
         update.message.reply_text("SCEGLI UNA GPU", reply_markup=make_button_list(list(Config.settings['afterburner']['gpus'].keys()), "set_gpu_speed_fan "))
@@ -294,12 +294,12 @@ def set_gpu_speed_fan(update, context):
         initial_log("set_gpu_speed_fan", callback_data.split(" ")[1:])
         update.callback_query.answer()
         if len(callback_data.split(" ")) == 2:
-            update.callback_query.message.edit_text("SCEGLI UNA VELOCITA", reply_markup=make_button_list(Config.settings['afterburner']['gpus'][callback_data.replace("set_gpu_speed_fan ", "")]['fan_speeds'], "set_gpu_speed_fan " + callback_data.replace("set_gpu_speed_fan ", "") + " "))
+            await update.callback_query.message.edit_text("SCEGLI UNA VELOCITA", reply_markup=make_button_list(Config.settings['afterburner']['gpus'][callback_data.replace("set_gpu_speed_fan ", "")]['fan_speeds'], "set_gpu_speed_fan " + callback_data.replace("set_gpu_speed_fan ", "") + " "))
         else:
-            update.callback_query.message.edit_text(be_set_gpu_speed_fan(callback_data.split(" ")[1], callback_data.split(" ")[2]))
+            await update.callback_query.message.edit_text(be_set_gpu_speed_fan(callback_data.split(" ")[1], callback_data.split(" ")[2]))
 
 
-def get_link(update, context):
+async def get_link(update, context):
     if context.args is not None or (update.message is not None and update.message.text[:1] != '/'):
         initial_log("get_link", context.args)
         update.message.reply_text("SCEGLI UNA COMPETIZIONE", reply_markup=make_button_list(list(Config.settings['football']['competizioni'].keys()), "get_link "))
@@ -308,12 +308,12 @@ def get_link(update, context):
         initial_log("get_link", callback_data.split(" ")[1:])
         update.callback_query.answer()
         if callback_data.split(" ")[1].find("EVLI") == -1:
-            update.callback_query.message.edit_text("SCEGLI UNA PARTITA", reply_markup=make_button_list(be_get_link_event(Config.settings['football']['competizioni'][callback_data.replace("get_link ", "")]), "get_link "))
+            await update.callback_query.message.edit_text("SCEGLI UNA PARTITA", reply_markup=make_button_list(be_get_link_event(Config.settings['football']['competizioni'][callback_data.replace("get_link ", "")]), "get_link "))
         else:
-            update.callback_query.message.edit_text(be_get_link_acestream(callback_data.split(" ")[1].replace("EVLI", "")))
+            await update.callback_query.message.edit_text(be_get_link_acestream(callback_data.split(" ")[1].replace("EVLI", "")))
 
 
-def start(update, context):
+async def start(update, context):
     initial_log("start", context.args)
     keyboard = []
     temp_list = []
@@ -327,10 +327,10 @@ def start(update, context):
             temp_list = []
     if temp_list:
         keyboard.append(temp_list)
-    update.message.reply_text(desc, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+    await update.message.reply_text(desc, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
 
 
-def generate_key(update, context):
+async def generate_key(update, context):
     initial_log("generate_key", str(update.message.text))
     keyboard = []
     temp_list = []
@@ -347,16 +347,16 @@ def generate_key(update, context):
     if temp_list:
         keyboard.append(temp_list)
     keyboard.append(['Main Menu 🔙'])
-    update.message.reply_text(desc, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+    await update.message.reply_text(desc, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
 
 
-def my_add_handler(struct_commands, disp, cmd_filter):
+def my_add_handler(struct_commands, appl, cmd_filter):
     ret_str = ""
-    disp.add_handler(MessageHandler(Filters.text(struct_commands['icon']) & cmd_filter, generate_key))
+    appl.add_handler(MessageHandler(filters.Text(struct_commands['icon']) & cmd_filter, generate_key))
     for key, value in struct_commands['commands'].items():
         ret_str += key + " - " + value["desc"] + "\n"
-        disp.add_handler(MessageHandler(Filters.text(value['icon']) & cmd_filter, eval(key)))
-        disp.add_handler(CommandHandler(key, eval(key), cmd_filter))
+        appl.add_handler(MessageHandler(filters.Text(value['icon']) & cmd_filter, eval(key)))
+        appl.add_handler(CommandHandler(key, eval(key), cmd_filter))
     return ret_str
 
 
@@ -366,7 +366,7 @@ def main():
         filename=Config.settings['log']['path_file'],
         format="%(asctime)s|%(levelname)s|%(filename)s:%(lineno)s|%(message)s",
         level=INFO)
-    upd = Updater(Config.settings['bot_telegram']['token'], use_context=True)
+    application = Application.builder().token(Config.settings['bot_telegram']['token']).build()
     value = {}
     users_list = []
     for key, value in Config.settings['function'].items():
@@ -374,24 +374,23 @@ def main():
             if usr not in users_list:
                 users_list.append(usr)
     cmd_str = "start - Avvia il bot e genera la tastiera"
-    upd.dispatcher.add_handler(CommandHandler("start", start, Filters.user(username=set(users_list))))
-    upd.dispatcher.add_handler(MessageHandler(Filters.text('Main Menu 🔙') & Filters.user(username=set(users_list)), start))
+    application.add_handler(CommandHandler("start", start, filters.User(username=set(users_list))))
+    application.add_handler(MessageHandler(filters.Text('Main Menu 🔙') & filters.User(username=set(users_list)), start))
     for key, value in Config.settings['function'].items():
         if value['active']:
-            cmd_str += my_add_handler(Config.bot_string[key], upd.dispatcher, Filters.user(username=set(value['users_abil'])))
-    upd.dispatcher.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
-    upd.dispatcher.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
-    upd.dispatcher.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
-    upd.dispatcher.add_handler(MessageHandler(Filters.document, doc_handler))
-    upd.dispatcher.add_handler(MessageHandler(Filters.regex(r'^' + escape('https://www.youtube.com/watch?v=')) & Filters.user(username=set(value['users_abil'])), download_music))
+            cmd_str += my_add_handler(Config.bot_string[key], application, filters.User(username=set(value['users_abil'])))
+    application.add_handler(CallbackQueryHandler(set_trex_profile, pattern=r'^set_trex_profile'))
+    application.add_handler(CallbackQueryHandler(set_gpu_speed_fan, pattern=r'^set_gpu_speed_fan'))
+    application.add_handler(CallbackQueryHandler(get_link, pattern=r'^get_link'))
+    application.add_handler(MessageHandler(filters.Document, doc_handler))
+    application.add_handler(MessageHandler(filters.Regex(r'^' + escape('https://www.youtube.com/watch?v=')) & filters.User(username=set(value['users_abil'])), download_music))
     with Client("my_account", Config.settings['client_telegram']['api_id'], Config.settings['client_telegram']['api_hash'], phone_number=Config.settings['client_telegram']['phone_number']) as app:
         app.send_message("@BotFather", "/setcommands")
         sleep(1)
         app.send_message("@BotFather", "@" + Config.settings['bot_telegram']['username'])
         sleep(1)
         app.send_message("@BotFather", cmd_str)
-    upd.start_polling()
-    upd.idle()
+    application.run_polling(1.0)
 
 
 if __name__ == '__main__':

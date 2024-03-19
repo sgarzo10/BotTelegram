@@ -127,7 +127,7 @@ def make_button_list(string_list, string_callback):
 
 
 def read_file(file_path, json=True):
-    f = open(file_path)
+    f = open(file_path, encoding="utf-8")
     if json:
         ctx = load(f)
     else:
