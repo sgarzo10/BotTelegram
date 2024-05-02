@@ -1,3 +1,3 @@
 @ECHO OFF
-taskkill /f /im pythonw3.12.exe
+taskkill /f /im pythonw.exe
 exit 0
